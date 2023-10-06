@@ -13,8 +13,8 @@
 #===================================#
 
 # python libraries:
-import os
-import threading
+# import os
+# import threading
 import time
 import signal
 
@@ -158,7 +158,7 @@ class Mujoco_Engine:
 
         # - capture view:
         camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
-        print(camera_sensor_data["frame_stamp"])
+        # print(camera_sensor_data["frame_stamp"])
         
         # render captured views on cv2
         if if_camera_preview:
