@@ -33,6 +33,9 @@ import mujoco_viewer
 # local libraries:
 from mujoco_engine.core_engine.wrapper.core import MjData, MjModel
 
+# import publisher for migration with ros
+from mujoco_engine.core_engine.state_pub_mujoco import StatePublisherMujoco
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # #        ___           ___         ___          ___           ___           ___       # #
@@ -90,6 +93,7 @@ class Mujoco_Engine:
         # self.mj_data = mujoco.MjData(self.mj_model)
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
+        self.state_pub = StatePublisherMujoco()
         
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
@@ -173,5 +177,8 @@ class Mujoco_Engine:
         
         # - update:
         self._t_update = time.time()
+
+        self.state_pub.pub_joint_states(self.mj_data)
+        self.state_pub.pub_link_states(self.mj_data)
         
     
