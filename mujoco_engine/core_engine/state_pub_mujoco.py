@@ -11,7 +11,7 @@ from nav_msgs.msg import Odometry
 from base_controller.msg import BaseControllerAction, BaseControllerFeedback, BaseControllerResult
 from threading import Lock
 
-# from mujoco_engine.core_engine.wrapper.core MjData
+from mujoco_engine.core_engine.wrapper.core import MjData
 
 
 class StatePublisherMujoco(object):
@@ -36,16 +36,20 @@ class StatePublisherMujoco(object):
                           'wam/bhand/finger_3/med_link', 'wam/forearm_link', 'wam/sensor/intel', 'wam/sensor/zed', 
                           'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link', 'wam/torque_sensor_link', 'wam/upper_arm_link', 
                           'wam/wrist_palm_link', 'wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam_7dof_bhand', 'waterloo_steel', 'world']
+        
+        rospy.sleep(0.5)
 
     # Publish states joints: relative to initial state
     def pub_joint_states(self, MujData):
         self.joint_state = JointState()
 
+        self.model, self.data = MujData.__getstate__()
+
         for name in self.jointlist:
             # Maybe needs to be  updated since this is relative to initial position, use MjModel
-            pos = MujData.joint(name).qpos[0]
-            vel = MujData.joint(name).qvel[0]
-            eff = MujData.joint(name).qfrc_actuator[0]
+            pos = self.data.joint(name).qpos[0]
+            vel = self.data.joint(name).qvel[0]
+            eff = self.data.joint(name).qfrc_actuator[0]
 
             self.joint_state.name.append(name)
             self.joint_state.position.append(pos)
@@ -65,25 +69,27 @@ class StatePublisherMujoco(object):
         orient = Quaternion()
         vel = Twist()
 
-        for name in self.linklist:
-            pos.position.x = MujData.body(name).xpos[0]
-            pos.position.y = MujData.body(name).xpos[1]
-            pos.position.z = MujData.body(name).xpos[2]
+        self.model, self.data = MujData.__getstate__()
 
-            orient.x = MujData.body(name).xquat[0]
-            orient.y = MujData.body(name).xquat[1]
-            orient.z = MujData.body(name).xquat[2]
-            orient.w = MujData.body(name).xquat[3]
+        for name in self.linklist:
+            pos.position.x = self.data.body(name).xpos[0]
+            pos.position.y = self.data.body(name).xpos[1]
+            pos.position.z = self.data.body(name).xpos[2]
+
+            orient.x = self.data.body(name).xquat[0]
+            orient.y = self.data.body(name).xquat[1]
+            orient.z = self.data.body(name).xquat[2]
+            orient.w = self.data.body(name).xquat[3]
 
             pos.orientation = orient
 
             # Velocity based on COM!! Not the body frame!!
-            vel.angular.x = MujData.body(name).cvel[0]
-            vel.angular.y = MujData.body(name).cvel[1]
-            vel.angular.z = MujData.body(name).cvel[2]
-            vel.linear.x = MujData.body(name).cvel[3]
-            vel.linear.y = MujData.body(name).cvel[4]
-            vel.linear.z = MujData.body(name).cvel[5]
+            vel.angular.x = self.data.body(name).cvel[0]
+            vel.angular.y = self.data.body(name).cvel[1]
+            vel.angular.z = self.data.body(name).cvel[2]
+            vel.linear.x = self.data.body(name).cvel[3]
+            vel.linear.y = self.data.body(name).cvel[4]
+            vel.linear.z = self.data.body(name).cvel[5]
 
             self.link_states.name.append(name)
             self.link_states.pose.append(pos)

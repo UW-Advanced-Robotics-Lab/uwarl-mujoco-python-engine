@@ -27,14 +27,17 @@ import numpy as np
 import mujoco
 import cv2
 
+import rospy
+
 # custom libraries:
 import mujoco_viewer
 
 # local libraries:
 from mujoco_engine.core_engine.wrapper.core import MjData, MjModel
 
-# import publisher for migration with ros
+# import publisher and subscriber for migration with ros
 from mujoco_engine.core_engine.state_pub_mujoco import StatePublisherMujoco
+from mujoco_engine.core_engine.control_commands import ControlCommand
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -94,6 +97,7 @@ class Mujoco_Engine:
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
         self.state_pub = StatePublisherMujoco()
+        self.control_commands = ControlCommand()
         
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
@@ -137,10 +141,21 @@ class Mujoco_Engine:
 
     def _update(self, if_camera_preview=True):
         delta_t = time.time() - self._t_update
+
         # print("FPS: {0}".format(1/delta_t))
         # - command joint control angles:
-        self.mj_data.actuator("wam/J1/P").ctrl = -1.92
-        self.mj_data.actuator("wam/J2/P").ctrl = 1.88
+        # self.mj_data.actuator("wam/J1/F").ctrl = -1.92
+        # self.mj_data.actuator("wam/J2/F").ctrl = 1.88
+
+        # Set control commands for actuators, only if there is new data
+        # self.control_commands.update_controls(self.mj_data)
+        # print(self.updated_data.actuator('wam/J1/P').ctrl)
+        # self.state = self.updated_data.__getstate__()
+        # rospy.logwarn('Control commands copy:' + str(self.state[1].ctrl[0]))
+        # rospy.logwarn('Active controllers copy:' + str(self.state[1].act))
+        # self.mj_data.__setstate__(self.state)
+        # rospy.logwarn('Control commands new:' + str(self.mj_data.ctrl[0]))
+        # rospy.logwarn('Active controllers new:' + str(self.mj_data.act))
 
         # process GUI interrupts
         self.mj_viewer.process_safe()
@@ -148,8 +163,20 @@ class Mujoco_Engine:
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
             self.mj_viewer.is_key_registered_to_step_to_next_safe():
+
+            # Set control commands for actuators, only if there is new data
+            self.control_commands.update_controls(self.mj_data)
+            # print(self.updated_data.actuator('wam/J1/P').ctrl)
+            # self.state = self.updated_data.__getstate__()
+            # rospy.logwarn('Control commands copy:' + str(self.state[1].ctrl[0]))
+            # rospy.logwarn('Active controllers copy:' + str(self.state[1].act))
+            # self.mj_data.__setstate__(self.state)
+            # self.mj_data.actuator('wam/J1/P').ctrl = 0.5
+            # rospy.logwarn('Control commands new:' + str(self.mj_data.ctrl))
+            # rospy.logwarn('Active controllers new:' + str(self.mj_data.act))
+
             # - render current view:
-            for i in range(10):
+            for i in range(5):
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
