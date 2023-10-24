@@ -20,8 +20,8 @@ class StatePublisherMujoco(object):
         self.pub_links = rospy.Publisher('/mujoco/link_states',LinkStates,queue_size=1)
         self.pub_joints = rospy.Publisher('/mujoco/joint_states',JointState,queue_size=1)
 
-        self.jointlist =   ['bhand/f1/dist', 'bhand/f1/med', 'bhand/f1/prox', 'bhand/f2/dist', 'bhand/f2/med', 
-                            'bhand/f2/prox', 'bhand/f3/dist', 'bhand/f3/med', 'smt/orie/z', 'smt/pose/x', 'smt/pose/y', 
+        self.jointlist =   ['bhand/f1/prox', 'bhand/f1/med', 'bhand/f1/dist', 'bhand/f2/prox', 'bhand/f2/med', 
+                            'bhand/f2/dist', 'bhand/f3/med', 'bhand/f3/dist', 'smt/orie/z', 'smt/pose/x', 'smt/pose/y', 
                             'smt/whl_LF', 'smt/whl_LR', 'smt/whl_RF', 'smt/whl_RR', 'smt/world_x', 'smt/world_y', 'smt/world_z', 
                             'wagon/LF', 'wagon/LF/whl', 'wagon/LR/whl', 'wagon/RF', 'wagon/RF/whl', 'wagon/RR/whl', 'wagon/handle', 
                             'wagon/o/z', 'wagon/p/x', 'wagon/p/y', 'wagon/world_x', 'wagon/world_y', 'wagon/world_z', 'wam/J1', 
@@ -46,6 +46,8 @@ class StatePublisherMujoco(object):
         self.model, self.data = MujData.__getstate__()
 
         for name in self.jointlist:
+            # print(name+" = "+str(self.data.joint(name).qpos[0]))
+            
             # Maybe needs to be  updated since this is relative to initial position, use MjModel
             pos = self.data.joint(name).qpos[0]
             vel = self.data.joint(name).qvel[0]

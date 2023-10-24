@@ -69,6 +69,7 @@ class ControlCommand(object):
 
 
         if self.update_bhand_pos:
+            # print(self.bhand_pos)
             mj_data.actuator('bhand/f1/prox').ctrl = self.bhand_pos[0]
             mj_data.actuator('bhand/f1/med').ctrl = self.bhand_pos[1]
             mj_data.actuator('bhand/f1/dist').ctrl = self.bhand_pos[2]

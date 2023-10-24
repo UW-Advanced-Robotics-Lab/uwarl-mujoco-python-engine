@@ -176,7 +176,7 @@ class Mujoco_Engine:
             # rospy.logwarn('Active controllers new:' + str(self.mj_data.act))
 
             # - render current view:
-            for i in range(5):
+            for i in range(10):
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
