@@ -97,7 +97,7 @@ class Mujoco_Engine:
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
         self.state_pub = StatePublisherMujoco()
-        self.control_commands = ControlCommand()
+        self.control_commands = ControlCommand(self.mj_data)
         
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
@@ -164,6 +164,8 @@ class Mujoco_Engine:
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
             self.mj_viewer.is_key_registered_to_step_to_next_safe():
 
+
+
             # Set control commands for actuators, only if there is new data
             self.control_commands.update_controls(self.mj_data)
             # print(self.updated_data.actuator('wam/J1/P').ctrl)
@@ -174,6 +176,8 @@ class Mujoco_Engine:
             # self.mj_data.actuator('wam/J1/P').ctrl = 0.5
             # rospy.logwarn('Control commands new:' + str(self.mj_data.ctrl))
             # rospy.logwarn('Active controllers new:' + str(self.mj_data.act))
+
+
 
             # - render current view:
             for i in range(10):
