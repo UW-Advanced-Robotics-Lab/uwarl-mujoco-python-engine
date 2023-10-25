@@ -163,22 +163,6 @@ class Mujoco_Engine:
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
             self.mj_viewer.is_key_registered_to_step_to_next_safe():
-
-
-
-            # Set control commands for actuators, only if there is new data
-            self.control_commands.update_controls(self.mj_data)
-            # print(self.updated_data.actuator('wam/J1/P').ctrl)
-            # self.state = self.updated_data.__getstate__()
-            # rospy.logwarn('Control commands copy:' + str(self.state[1].ctrl[0]))
-            # rospy.logwarn('Active controllers copy:' + str(self.state[1].act))
-            # self.mj_data.__setstate__(self.state)
-            # self.mj_data.actuator('wam/J1/P').ctrl = 0.5
-            # rospy.logwarn('Control commands new:' + str(self.mj_data.ctrl))
-            # rospy.logwarn('Active controllers new:' + str(self.mj_data.act))
-
-
-
             # - render current view:
             for i in range(10):
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
