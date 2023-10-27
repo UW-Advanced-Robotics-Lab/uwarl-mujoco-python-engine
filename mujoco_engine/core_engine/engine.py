@@ -96,7 +96,7 @@ class Mujoco_Engine:
         # self.mj_data = mujoco.MjData(self.mj_model)
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
-        self.state_pub = StatePublisherMujoco()
+        self.state_pub = StatePublisherMujoco(self.mj_data)
         self.control_commands = ControlCommand(self.mj_data)
         
         ## MJ Viewer:
@@ -164,7 +164,7 @@ class Mujoco_Engine:
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
             self.mj_viewer.is_key_registered_to_step_to_next_safe():
             # - render current view:
-            for i in range(10):
+            for i in range(5):
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
@@ -193,7 +193,7 @@ class Mujoco_Engine:
         # - update:
         self._t_update = time.time()
 
-        self.state_pub.pub_joint_states(self.mj_data)
-        self.state_pub.pub_link_states(self.mj_data)
+        self.state_pub.pub_joint_states()
+        self.state_pub.pub_link_states()
         
     
