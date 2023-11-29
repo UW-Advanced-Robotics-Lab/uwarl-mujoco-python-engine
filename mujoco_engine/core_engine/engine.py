@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 """ `mujoco_engine.py`
 
     @author:  Jack (Jianxiang) Xu
@@ -7,20 +8,16 @@
 
     @description:
         This library will initiate an Engine that handles updates and rendering
+        Last edits  : Nov 28, 2023 (Tim van Meijel)
 """
+
 #===================================#
 #  I M P O R T - L I B R A R I E S  #
 #===================================#
 
 # python libraries:
-# import os
-# import threading
-import time
+
 import signal
-
-from enum import Enum
-from datetime import timedelta
-
 
 # python 3rd party libraries:
 import numpy as np
@@ -55,6 +52,7 @@ from mujoco_engine.core_engine.control_commands import ControlCommand
 # #                                                                                     # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 #=======================#
 #  D E F I N I T I O N  #
 #=======================#
@@ -78,7 +76,7 @@ class Mujoco_Engine:
     #  I N I T I A L I Z A T I O N  #
     #===============================#
     def __init__(self,  
-        xml_path, rate_Hz, 
+        xml_path, rate_Hz, rate_scene,
         camera_config=None, 
         name="DEFAULT", 
         CAMERA_V_FACTOR=3
@@ -90,15 +88,23 @@ class Mujoco_Engine:
             self._camera_config = (camera_config) # override if given
         self._name = name
         self._rate_Hz = rate_Hz
-        
+        self._rate_scene = rate_scene
+
+        # Calculate rendering freq
+        self.steps_per_render = round(float(self._rate_Hz)/float(self._rate_scene))
+        self.i = 0
+        self.last_render = rospy.Time.now()
+
         ## Initiate MJ
-        # self.mj_model = mujoco.MjModel.from_xml_path(xml_path)
-        # self.mj_data = mujoco.MjData(self.mj_model)
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
-        self.state_pub = StatePublisherMujoco(self.mj_data)
+        self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model)
         self.control_commands = ControlCommand(self.mj_data)
-        
+
+        self.currentx = 0.0
+        self.currenty = 0.0
+        self.currenttheta = 0.0
+
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
             title="Mujoco-Engine", 
@@ -106,14 +112,15 @@ class Mujoco_Engine:
             window_size=(1280,720),
         )
         # if len(self._camera_config):
-        # self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
-        self._t_update = time.time()
+        #     self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
+        # self._t_update = time.time()
         
         # cv2 window
         cv2.startWindowThread()
         self.h_min = np.Infinity
         for camera, config in self._camera_config.items():
             self.h_min = int(min(config["height"]/CAMERA_V_FACTOR, self.h_min))
+
         
     #==================================#
     #  P U B L I C    F U N C T I O N  #
@@ -139,60 +146,61 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
-    def _update(self, if_camera_preview=True):
-        delta_t = time.time() - self._t_update
+    def _update(self, if_camera_preview=False):
 
-        # print("FPS: {0}".format(1/delta_t))
-        # - command joint control angles:
-        # self.mj_data.actuator("wam/J1/F").ctrl = -1.92
-        # self.mj_data.actuator("wam/J2/F").ctrl = 1.88
+        # Get current velocity of base for PID control
+        self.currentx = self.mj_data.body("smt/base_link").cvel[3]
+        self.currenty = self.mj_data.body("smt/base_link").cvel[4]
+        self.currenttheta = self.mj_data.body("smt/base_link").cvel[2]
 
-        # Set control commands for actuators, only if there is new data
-        # self.control_commands.update_controls(self.mj_data)
-        # print(self.updated_data.actuator('wam/J1/P').ctrl)
-        # self.state = self.updated_data.__getstate__()
-        # rospy.logwarn('Control commands copy:' + str(self.state[1].ctrl[0]))
-        # rospy.logwarn('Active controllers copy:' + str(self.state[1].act))
-        # self.mj_data.__setstate__(self.state)
-        # rospy.logwarn('Control commands new:' + str(self.mj_data.ctrl[0]))
-        # rospy.logwarn('Active controllers new:' + str(self.mj_data.act))
-
-        # process GUI interrupts
-        self.mj_viewer.process_safe()
+        # Set control commands by simple PID control defined in "control_commands.py"
+        self.control_commands.velx_PID(25.0, 0.3, 0.7, self.currentx)   
+        self.control_commands.vely_PID(25.0, 0.3, 0.7, self.currenty)
+        self.control_commands.veltheta_PID(8.0, 0.1, 0.3, self.currenttheta)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
             self.mj_viewer.is_key_registered_to_step_to_next_safe():
+
             # - render current view:
-            for i in range(5):
+            steps = round(1/self._rate_Hz/self.mj_model._model.opt.timestep)
+            for i in range(steps):
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
 
-        # render current view with glfw:
-        self.mj_viewer.update_safe()
-        self.mj_viewer.render_safe()
-        self.mj_viewer.render_sensor_cameras_safe()
-        # self.mj_viewer_off.render()
+        # process GUI interrupts
+        self.mj_viewer.process_safe()
 
-        # - capture view:
-        camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
-        # print(camera_sensor_data["frame_stamp"])
-        
-        # render captured views on cv2
-        if if_camera_preview:
-            cv2_capture_window = []
-            for camera_name, camera_buf in camera_sensor_data["frame_buffer"].items():
-                img = cv2.cvtColor(camera_buf, cv2.COLOR_RGB2BGR)
-                img = cv2.flip(img, 0)
-                img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
-                cv2_capture_window.append(img)
-                
-            cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
-        
-        # - update:
-        self._t_update = time.time()
+        # Update mj_viewer with specified frequency
+        if self.i == 0:
 
+            self.mj_viewer.update_safe()
+            self.mj_viewer.render_safe()
+            self.i=self.steps_per_render-1
+
+            # Set "if_camera_preview" to True (input "_update" function) when you want to plot the cameras mounted on the WAM
+            # Rendering of sensor cameras takes long!! Reduce update frequency to maintain real time simulation!
+            if if_camera_preview:
+
+                self.mj_viewer.render_sensor_cameras_safe()
+
+                # - capture view:
+                camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
+            
+                # render captured views on cv2      
+                cv2_capture_window = []
+                for camera_name, camera_buf in camera_sensor_data["frame_buffer"].items():
+                    img = cv2.cvtColor(camera_buf, cv2.COLOR_RGB2BGR)
+                    img = cv2.flip(img, 0)
+                    img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
+                    cv2_capture_window.append(img)
+                    
+                cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
+
+        self.i-=1
+
+        # Publish link_states and joint_states
         self.state_pub.pub_joint_states()
         self.state_pub.pub_link_states()
         

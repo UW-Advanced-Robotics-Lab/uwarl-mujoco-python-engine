@@ -1,99 +1,126 @@
 #! /usr/bin/env python
 
+# Subscribers for reading control commands from hw_interface and writing them into mj_data to be used next engine step
+# Last version: Nov 28, 2023 Tim van Meijel
+
 import rospy
-from math import pi, sin, cos, acos, atan2
-import numpy as np
-from geometry_msgs.msg import Twist, PoseWithCovarianceStamped, Pose, Quaternion
-from gazebo_msgs.msg import LinkStates
-from std_msgs.msg import Int64, Float64MultiArray
+from math import pi, sin, cos
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
-from nav_msgs.msg import Odometry
-from base_controller.msg import BaseControllerAction, BaseControllerFeedback, BaseControllerResult
-from threading import Lock
-from mujoco_engine.core_engine.wrapper.core import MjData, MjModel
+
 
 class ControlCommand(object):
 
     def __init__(self,mj_data):
-        # Base velocity control
-        self.sub_vel_base = rospy.Subscriber("uwarl_a/cmd_vel", Twist, self.vel_base_callback)
-        # Wam position control
-        self.sub_wam_pos = rospy.Subscriber("uwarl_a/wam_joints_control/command" , Float64MultiArray, self.wam_pos_callback)
-        # Bhand position control
-        self.sub_bhand_pos = rospy.Subscriber("/uwarl_a/bhand_joints_control/command" , Float64MultiArray, self.bhand_pos_callback)
-        # Wam effort trajectory control
-        self.sub_wam_eff = rospy.Subscriber("uwarl_a/eff_based_pos_traj_controller/command" , Float64MultiArray, self.wam_eff_callback)
-        
-        self.update_bhand_pos = False
-        self.update_base = False
-        self.update_wam_pos = False
-        self.update_wam_eff = False
+        # Base velocity effort control
+        self.sub_vel_base = rospy.Subscriber("uwarl_a/robotnik_base_control/cmd_vel", Twist, self.vel_base_callback)
+        # Wam position effort control
+        self.sub_wam_pos = rospy.Subscriber("/mujoco/ros_control/effort_commands" ,JointState, self.effort_callback)
 
         # Create pointer to mujoco data
         self.mj_data_control = mj_data
-        # Wait for subscribers to be initialized
-        rospy.sleep(0.5)
+
+        # Initialize PID variables for base velocity effort control
+        self.Ix = 0.0
+        self.ex_last = 0.0
+        self.last_time_x = rospy.Time().now().to_time()
+
+        self.Iy = 0.0
+        self.ey_last = 0.0
+        self.last_time_y = rospy.Time().now().to_time()
+
+        self.Itheta = 0.0
+        self.etheta_last = 0.0
+        self.last_time_theta = rospy.Time().now().to_time()
+
+        self.vel_base = [0.0, 0.0, 0.0]
+
 
     def vel_base_callback(self, msg):
-        # Store data in array
-        # self.update_base = True
+        # Store data in array to be used by PID control
+        # New velocity commands are received at approximately 50 Hz, PID loop runs at 200 Hz
         self.vel_base = [msg.linear.x, msg.linear.y, msg.angular.z]
-        # print(self.vel_base)
-        self.mj_data_control.actuator('smt/pose/x').ctrl = self.vel_base[0]
-        self.mj_data_control.actuator('smt/pose/y').ctrl = self.vel_base[1]
-        self.mj_data_control.actuator('smt/orie/z').ctrl = self.vel_base[2]
 
-    def wam_pos_callback(self, msg):
-        # Store data in array
-        # self.update_wam_pos = True
-        # self.update_wam_eff = False
-        self.wam_pos = msg.data
-        self.mj_data_control.actuator('wam/J1/P').ctrl = self.wam_pos[0]
-        self.mj_data_control.actuator('wam/J2/P').ctrl = self.wam_pos[1]
-        self.mj_data_control.actuator('wam/J3/P').ctrl = self.wam_pos[2]
-        self.mj_data_control.actuator('wam/J4/P').ctrl = self.wam_pos[3]
-        self.mj_data_control.actuator('wam/J5/P').ctrl = self.wam_pos[4]
-        self.mj_data_control.actuator('wam/J6/P').ctrl = self.wam_pos[5]
-        self.mj_data_control.actuator('wam/J7/P').ctrl = self.wam_pos[6]
 
-        self.mj_data_control.actuator('wam/J1/F').ctrl = 0
-        self.mj_data_control.actuator('wam/J2/F').ctrl = 0
-        self.mj_data_control.actuator('wam/J3/F').ctrl = 0
-        self.mj_data_control.actuator('wam/J4/F').ctrl = 0
-        self.mj_data_control.actuator('wam/J5/F').ctrl = 0
-        self.mj_data_control.actuator('wam/J6/F').ctrl = 0
-        self.mj_data_control.actuator('wam/J7/F').ctrl = 0
+    # PID loop to control x velocity in map frame
+    def velx_PID(self, Kp, Ki, Kd, CP):
 
-    def bhand_pos_callback(self, msg):
-        # Store data in array
-        # self.update_bhand_pos = True
-        self.bhand_pos = msg.data
-        self.mj_data_control.actuator('bhand/f1/prox').ctrl = self.bhand_pos[0]
-        self.mj_data_control.actuator('bhand/f1/med').ctrl = self.bhand_pos[1]
-        self.mj_data_control.actuator('bhand/f1/dist').ctrl = self.bhand_pos[2]
-        self.mj_data_control.actuator('bhand/f2/prox').ctrl = self.bhand_pos[3]
-        self.mj_data_control.actuator('bhand/f2/med').ctrl = self.bhand_pos[4]
-        self.mj_data_control.actuator('bhand/f2/dist').ctrl = self.bhand_pos[5]
-        self.mj_data_control.actuator('bhand/f3/med').ctrl = self.bhand_pos[6]
-        self.mj_data_control.actuator('bhand/f3/dist').ctrl = self.bhand_pos[7]
+        # Convert reference velocities into mapframe
+        SP = self.vel_base[0]*cos(self.mj_data_control.joint('smt/orie/z').qpos[0])+self.vel_base[1]*-sin(self.mj_data_control.joint('smt/orie/z').qpos[0])
 
-    def wam_eff_callback(self, msg):
-        # Store data in array
-        # self.update_wam_eff = True
-        # self.update_wam_pos = False
-        self.wam_eff = msg.data
-        self.mj_data_control.actuator('wam/J1/F').ctrl = self.wam_eff[0]
-        self.mj_data_control.actuator('wam/J2/F').ctrl = self.wam_eff[1]
-        self.mj_data_control.actuator('wam/J3/F').ctrl = self.wam_eff[2]
-        self.mj_data_control.actuator('wam/J4/F').ctrl = self.wam_eff[3]
-        self.mj_data_control.actuator('wam/J5/F').ctrl = self.wam_eff[4]
-        self.mj_data_control.actuator('wam/J6/F').ctrl = self.wam_eff[5]
-        self.mj_data_control.actuator('wam/J7/F').ctrl = self.wam_eff[6]
+        t = rospy.Time().now().to_time()
+        ex = float(SP - CP)
 
-        self.mj_data_control.actuator('wam/J1/P').ctrl = []
-        self.mj_data_control.actuator('wam/J2/P').ctrl = []
-        self.mj_data_control.actuator('wam/J3/P').ctrl = []
-        self.mj_data_control.actuator('wam/J4/P').ctrl = []
-        self.mj_data_control.actuator('wam/J5/P').ctrl = []
-        self.mj_data_control.actuator('wam/J6/P').ctrl = []
-        self.mj_data_control.actuator('wam/J7/P').ctrl = []
+        # Compute PID variables
+        P = ex*Kp
+        self.Ix += Ki*ex*(t-self.last_time_x+0.0001) # Make sure it is never 0.0
+        D = Kd*(ex-self.ex_last)/(t-self.last_time_x+0.0001) # Make sure it is never 0.0
+
+        self.ex_last = ex
+        self.last_time_x = t
+
+        control = P+self.Ix+D
+
+        # Set control commands in mj_data
+        self.mj_data_control.actuator('smt/pose/x').ctrl = control
+
+
+    # PID loop to control y velocity in map frame
+    def vely_PID(self, Kp, Ki, Kd, CP):
+
+        # Convert reference velocities into mapframe
+        SP = self.vel_base[0]*sin(self.mj_data_control.joint('smt/orie/z').qpos[0])+self.vel_base[1]*cos(self.mj_data_control.joint('smt/orie/z').qpos[0])
+
+        t = rospy.Time().now().to_time()
+        ey = float(SP - CP)
+
+        # Compute PID variables
+        P = ey*Kp
+        self.Iy += Ki*ey*(t-self.last_time_y+0.0001)
+        D = Kd*(ey-self.ey_last)/(t-self.last_time_y+0.0001)
+
+        self.ey_last = ey
+        self.last_time_y = t
+
+        control = P+self.Iy+D
+
+        # Set control commands in mj_data
+        self.mj_data_control.actuator('smt/pose/y').ctrl = control
+
+    
+    # PID loop to control yaw rate in map frame
+    def veltheta_PID(self, Kp, Ki, Kd, CP):
+
+        SP = self.vel_base[2]
+
+        t = rospy.Time().now().to_time()
+        etheta = float(SP - CP)
+
+        # Compute PID variables
+        P = etheta*Kp
+        self.Itheta += Ki*etheta*(t-self.last_time_theta+0.0001)
+        D = Kd*(etheta-self.etheta_last)/(t-self.last_time_theta+0.0001)
+
+        self.etheta_last = etheta
+        self.last_time_theta = t
+
+        control = P+self.Itheta+D
+
+        # Set control commands in mj_data
+        self.mj_data_control.actuator('smt/orie/z').ctrl = control
+
+
+    # Callback for hw_sim_interface effort commands
+    def effort_callback(self, msg):
+        self.efforts = msg
+        i = 0
+        # Set control commands in mj_data
+        for i in range(0, len(self.efforts.name)):
+
+            # Add "/F" for wam force actuators
+            if self.efforts.name[i]>="wam":
+                self.mj_data_control.actuator(self.efforts.name[i]+'/F').ctrl = self.efforts.effort[i]
+            else:
+                self.mj_data_control.actuator(self.efforts.name[i]).ctrl = self.efforts.effort[i]
+
+            i+=1
