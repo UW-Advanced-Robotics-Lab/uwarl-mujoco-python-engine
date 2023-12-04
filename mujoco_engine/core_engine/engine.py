@@ -36,6 +36,8 @@ from mujoco_engine.core_engine.wrapper.core import MjData, MjModel
 from mujoco_engine.core_engine.state_pub_mujoco import StatePublisherMujoco
 from mujoco_engine.core_engine.control_commands import ControlCommand
 
+from std_msgs.msg import Float64
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # #        ___           ___         ___          ___           ___           ___       # #
@@ -100,6 +102,8 @@ class Mujoco_Engine:
         self.mj_data = MjData(self.mj_model)
         self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model)
         self.control_commands = ControlCommand(self.mj_data)
+        self.pub_time = rospy.Publisher('/simtime',Float64)
+        self.simtime = Float64()
 
         self.currentx = 0.0
         self.currenty = 0.0
@@ -154,9 +158,9 @@ class Mujoco_Engine:
         self.currenttheta = self.mj_data.body("smt/base_link").cvel[2]
 
         # Set control commands by simple PID control defined in "control_commands.py"
-        self.control_commands.velx_PID(25.0, 0.3, 0.7, self.currentx)   
-        self.control_commands.vely_PID(25.0, 0.3, 0.7, self.currenty)
-        self.control_commands.veltheta_PID(8.0, 0.1, 0.3, self.currenttheta)
+        self.control_commands.velx_PID(25.0, 0.3, 1.3, self.currentx)   
+        self.control_commands.vely_PID(25.0, 0.3, 1.3, self.currenty)
+        self.control_commands.veltheta_PID(12.0, 0.3, 0.3, self.currenttheta)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
@@ -203,5 +207,9 @@ class Mujoco_Engine:
         # Publish link_states and joint_states
         self.state_pub.pub_joint_states()
         self.state_pub.pub_link_states()
+
+        # Publish simulation time
+        self.simtime.data = self.mj_data.time
+        self.pub_time.publish(self.simtime)
         
     
