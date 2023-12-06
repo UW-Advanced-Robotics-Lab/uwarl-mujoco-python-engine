@@ -102,7 +102,7 @@ class Mujoco_Engine:
         self.mj_data = MjData(self.mj_model)
         self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model)
         self.control_commands = ControlCommand(self.mj_data)
-        self.pub_time = rospy.Publisher('/simtime',Float64)
+        self.pub_time = rospy.Publisher('/simtime',Float64,queue_size=1)
         self.simtime = Float64()
 
         self.currentx = 0.0
