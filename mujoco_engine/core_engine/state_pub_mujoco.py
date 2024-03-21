@@ -26,9 +26,9 @@ class StatePublisherMujoco(object):
         self.jointlist =   ['bhand/f1/prox', 'bhand/f1/med', 'bhand/f1/dist', 'bhand/f2/prox', 'bhand/f2/med', 
                             'bhand/f2/dist', 'bhand/f3/med', 'bhand/f3/dist', 'smt/orie/z', 'smt/pose/x', 'smt/pose/y', 
                             'smt/whl_LF', 'smt/whl_LR', 'smt/whl_RF', 'smt/whl_RR', 'smt/world_x', 'smt/world_y', 'smt/world_z', 
-                            'wagon/LF', 'wagon/LF/whl', 'wagon/LR/whl', 'wagon/RF', 'wagon/RF/whl', 'wagon/RR/whl', 'wagon/handle', 
-                            'wagon/o/z', 'wagon/p/x', 'wagon/p/y', 'wagon/world_x', 'wagon/world_y', 'wagon/world_z', 'wam/J1', 
-                            'wam/J2', 'wam/J3', 'wam/J4', 'wam/J5', 'wam/J6', 'wam/J7']
+                            'wagon/LF', 'wagon/LF/whl', 'wagon/LR/whl', 'wagon/RF', 'wagon/RF/whl', 'wagon/RR/whl', 'wagon/handle','wagon/handle2',
+                            'wagon/world_x', 'wagon/world_y', 'wagon/world_z', 
+                            'wam/J1','wam/J2', 'wam/J3', 'wam/J4', 'wam/J5', 'wam/J6', 'wam/J7']
         
         self.linklist =  ['smt/base_link', 'smt/whl/LF_link', 'smt/whl/LR_link', 'smt/whl/RF_link', 'smt/whl/RR_link', 
                           'utility/wagon', 'wagon', 'wagon/LF', 'wagon/LF/whl', 'wagon/LR', 'wagon/LR/whl', 'wagon/RF', 
