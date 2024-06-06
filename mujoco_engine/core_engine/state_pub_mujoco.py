@@ -36,7 +36,7 @@ class StatePublisherMujoco(object):
                           'wam/base', 'wam/base_link', 'wam/bhand', 'wam/bhand/bhand_palm_link', 'wam/bhand/finger_1/dist_link', 
                           'wam/bhand/finger_1/med_link', 'wam/bhand/finger_1/prox_link', 'wam/bhand/finger_2/dist_link', 
                           'wam/bhand/finger_2/med_link', 'wam/bhand/finger_2/prox_link', 'wam/bhand/finger_3/dist_link', 
-                          'wam/bhand/finger_3/med_link', 'wam/forearm_link', 'wam/sensor/intel', #'wam/sensor/zed', 
+                          'wam/bhand/finger_3/med_link', 'wam/forearm_link', 'wam/sensor/intel', 'wam/sensor/zed', 
                           'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link', 'wam/torque_sensor_link', 'wam/upper_arm_link', 
                           'wam/wrist_palm_link', 'wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam_7dof_bhand', 'waterloo_steel', 'world']
 

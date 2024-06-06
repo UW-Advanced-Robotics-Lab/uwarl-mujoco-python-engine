@@ -66,9 +66,9 @@ class Mujoco_Engine:
     #  C O N S T A N T  #
     #===================#
     _camera_config = {
-        "camera/zed/L": {"width": 1280, "height":720, "fps": 60, "id":1},
-        "camera/zed/R": {"width": 1280, "height":720, "fps": 60, "id":0},
-        "camera/intel/rgb": {"width": 1280, "height":720, "fps": 60, "id":2},
+        # "camera/zed/L": {"width": 1280, "height":720, "fps": 60, "id":1},
+        # "camera/zed/R": {"width": 1280, "height":720, "fps": 60, "id":0},
+        "camera/intel/rgb": {"width": 1280, "height":720, "fps": 60, "id":0}
     }
     _camera_views = {}
     _IC_state = None
@@ -150,7 +150,7 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
-    def _update(self, if_camera_preview=False):
+    def _update(self, if_camera_preview=True):
 
         # Get current velocity of base for PID control
         self.currentx = self.mj_data.body("smt/base_link").cvel[3]
@@ -199,8 +199,10 @@ class Mujoco_Engine:
                     img = cv2.flip(img, 0)
                     img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
                     cv2_capture_window.append(img)
-                    
+                
+                # cv2.imshow("camera views",np.uint8(np.ones((400,400,3))*100))
                 cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
+                cv2.waitKey(int(1000/self._rate_Hz))
 
         self.i-=1
 
