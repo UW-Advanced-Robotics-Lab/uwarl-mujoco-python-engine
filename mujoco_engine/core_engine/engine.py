@@ -113,7 +113,7 @@ class Mujoco_Engine:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
             title="Mujoco-Engine", 
             sensor_config=self._camera_config,
-            window_size=(1280,720),
+            window_size=(1920,1080),
         )
         # if len(self._camera_config):
         #     self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
