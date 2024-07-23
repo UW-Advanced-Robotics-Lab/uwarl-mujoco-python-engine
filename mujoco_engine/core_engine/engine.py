@@ -81,7 +81,8 @@ class Mujoco_Engine:
         xml_path, rate_Hz, rate_scene,
         camera_config=None, 
         name="DEFAULT", 
-        CAMERA_V_FACTOR=3
+        CAMERA_V_FACTOR=3,
+        write_to = None
     ):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -91,6 +92,8 @@ class Mujoco_Engine:
         self._name = name
         self._rate_Hz = rate_Hz
         self._rate_scene = rate_scene
+        # Write camera images to a folder
+        self._write_to = write_to
 
         # Calculate rendering freq
         self.steps_per_render = round(float(self._rate_Hz)/float(self._rate_scene))
@@ -190,7 +193,7 @@ class Mujoco_Engine:
                 self.mj_viewer.render_sensor_cameras_safe()
 
                 # - capture view:
-                camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
+                camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe(self._write_to)
             
                 # render captured views on cv2      
                 cv2_capture_window = []
