@@ -30,11 +30,11 @@ class StatePublisherMujoco(object):
                             'smt/whl_LF', 'smt/whl_LR', 'smt/whl_RF', 'smt/whl_RR', 'smt/world_x', 'smt/world_y', 'smt/world_z', 
                             'wagon/LF', 'wagon/LF/whl', 'wagon/LR/whl', 'wagon/RF', 'wagon/RF/whl', 'wagon/RR/whl', 'wagon/handle','wagon/handle2',
                             'wagon/slide/world_x', 'wagon/slide/world_y', 'wagon/slide/world_z', 'wagon/hinge/world_y', 'wagon/hinge/world_z',
-                            'wam/J1','wam/J2', 'wam/J3', 'wam/J4', 'wam/J5', 'wam/J6', 'wam/J7']#,
-                            # 'fetch/R_whl','fetch/L_whl','fetch/torso_lift',
-                            # 'fetch/head_pan','fetch/head_tilt',
-                            # 'fetch/shoulder_pan','fetch/shoulder_lift','fetch/upper_arm_roll','fetch/elbow_flex','fetch/fore_arm_roll','fetch/wrist_flex','fetch/wrist_roll',
-                            # 'fetch/right_gripper_finger','fetch/left_gripper_finger']
+                            'wam/J1','wam/J2', 'wam/J3', 'wam/J4', 'wam/J5', 'wam/J6', 'wam/J7',
+                            'fetch/R_whl','fetch/L_whl','fetch/torso_lift',
+                            'fetch/head_pan','fetch/head_tilt',
+                            'fetch/shoulder_pan','fetch/shoulder_lift','fetch/upper_arm_roll','fetch/elbow_flex','fetch/fore_arm_roll','fetch/wrist_flex','fetch/wrist_roll',
+                            'fetch/right_gripper_finger','fetch/left_gripper_finger']
         
         self.linklist =  ['smt/base_link', 'smt/whl/LF_link', 'smt/whl/LR_link', 'smt/whl/RF_link', 'smt/whl/RR_link',
                           'smt/front/camera','smt/rear/camera',
