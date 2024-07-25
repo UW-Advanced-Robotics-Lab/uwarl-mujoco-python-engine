@@ -15,9 +15,12 @@ class ControlCommand(object):
         # Base velocity effort control
         self.sub_vel_base = rospy.Subscriber("uwarl_a/robotnik_base_control/cmd_vel", Twist, self.vel_base_callback)
         # Wam position effort control
+        # This topic broadcasts only those actuators which have a transmission associated with it in that robots' urdf-file.
+        # So, other non-fixed joints that are not being controlled through a motor, like wheel joints, are not available here.
         self.sub_wam_pos = rospy.Subscriber("/mujoco/ros_control/effort_commands" ,JointState, self.effort_callback)
 
         # Create pointer to mujoco data
+        # This contains references to joints which have actuators associated with them (they are mentioned in files similar to `include_summit_wam_bhand_actuators.xml`)
         self.mj_data_control = mj_data
 
         # Initialize PID variables for base velocity effort control
@@ -117,9 +120,13 @@ class ControlCommand(object):
         # Set control commands in mj_data
         for i in range(0, len(self.efforts.name)):
 
-            # Add "/F" for wam force actuators
-            if self.efforts.name[i]>="wam":
+            # Add "/F" for arm force actuators. This is only for the sake of differentiating actuators which are only position-control, and those that can be (F)orce-controlled.
+            if (self.efforts.name[i]>="wam") or (self.efforts.name[i]>="fetch_arm"):
+                # This topic broadcasts only those actuators which have a transmission associated with it in that robots' urdf-file.
+                # So, other non-fixed joints that are not being controlled through a motor, like wheel joints, are not available here.
                 self.mj_data_control.actuator(self.efforts.name[i]+'/F').ctrl = self.efforts.effort[i]
+                # Why do this? Because we are using `/F` , appended onto the name of the joint, to dictate the motor name (include_summit_wam_bhand_actuators.xml)
+                # that can be force-controlled (the rest will all be position controlled)
             else:
                 self.mj_data_control.actuator(self.efforts.name[i]).ctrl = self.efforts.effort[i]
 
