@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# Publishers for publishing simulation states (link_states and joint_states)
+# Publishers for publishing simulation states (link_states and joint_states) from MuJoCo to relevant ROS topics
 # Last version: Nov 28, 2023 Tim van Meijel
 
 import rospy
@@ -46,7 +46,13 @@ class StatePublisherMujoco(object):
                           'wam/bhand/finger_2/med_link', 'wam/bhand/finger_2/prox_link', 'wam/bhand/finger_3/dist_link', 
                           'wam/bhand/finger_3/med_link', 'wam/forearm_link', 'wam/camera', #'wam/sensor/zed', 
                           'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link', 'wam/torque_sensor_link', 'wam/upper_arm_link', 
-                          'wam/wrist_palm_link', 'wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam_7dof_bhand', 'waterloo_steel', 'world']
+                          'wam/wrist_palm_link', 'wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam_7dof_bhand', 'waterloo_steel', 'world',
+                          'fetch/base_link','fetch/whl/L_link','fetch/whl/R_link','fetch/laser_link','fetch/torso_fixed_link',
+                          'fetch/torso_lift_link','fetch/bellows_link','fetch/bellows_2_link',
+                          'fetch/head_pan_link','fetch/head_tilt_link',
+                          'fetch/shoulder_pan_link','fetch/shoulder_lift_link','fetch/upper_arm_roll_link','fetch/elbow_flex_link',
+                          'fetch/fore_arm_roll_link','fetch/wrist_flex_link','fetch/wrist_roll_link','fetch/gripper_link',
+                          'fetch_hand/right_gripper_finger_link','fetch_hand/left_gripper_finger_link']
 
     # Publish states joints: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
