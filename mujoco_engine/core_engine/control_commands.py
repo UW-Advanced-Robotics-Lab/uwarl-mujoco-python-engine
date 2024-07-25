@@ -121,7 +121,7 @@ class ControlCommand(object):
         for i in range(0, len(self.efforts.name)):
 
             # Add "/F" for arm force actuators. This is only for the sake of differentiating actuators which are only position-control, and those that can be (F)orce-controlled.
-            if (self.efforts.name[i]>="wam") or (self.efforts.name[i]>="fetch_arm"):
+            if ("wam" in self.efforts.name[i]) or ("fetch_arm" in self.efforts.name[i]):
                 # This topic broadcasts only those actuators which have a transmission associated with it in that robots' urdf-file.
                 # So, other non-fixed joints that are not being controlled through a motor, like wheel joints, are not available here.
                 self.mj_data_control.actuator(self.efforts.name[i]+'/F').ctrl = self.efforts.effort[i]
