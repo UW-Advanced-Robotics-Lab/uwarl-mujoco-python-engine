@@ -35,7 +35,9 @@ class StatePublisherMujoco(object):
                             'fetch/R_whl','fetch/L_whl','fetch/torso_lift',
                             'fetch/head_pan','fetch/head_tilt',
                             'fetch_arm/shoulder_pan','fetch_arm/shoulder_lift','fetch_arm/upper_arm_roll','fetch_arm/elbow_flex','fetch_arm/fore_arm_roll','fetch_arm/wrist_flex','fetch_arm/wrist_roll',
-                            'fetch_hand/right_gripper_finger','fetch_hand/left_gripper_finger']
+                            'fetch_hand/right_gripper_finger','fetch_hand/left_gripper_finger',
+                            'fork_lift/pose/x','fork_lift/pose/y','fork_lift/orie/z',
+                            'fork_lift/world_x','fork_lift/world_y','fork_lift/world_z']
         
         self.linklist =  ['smt/base_link', 'smt/whl/LF_link', 'smt/whl/LR_link', 'smt/whl/RF_link', 'smt/whl/RR_link',
                           'smt/front/camera','smt/rear/camera',
@@ -52,7 +54,8 @@ class StatePublisherMujoco(object):
                           'fetch/head_pan_link','fetch/head_tilt_link',
                           'fetch/shoulder_pan_link','fetch/shoulder_lift_link','fetch/upper_arm_roll_link','fetch/elbow_flex_link',
                           'fetch/fore_arm_roll_link','fetch/wrist_flex_link','fetch/wrist_roll_link','fetch/gripper_link',
-                          'fetch_hand/right_gripper_finger_link','fetch_hand/left_gripper_finger_link']
+                          'fetch_hand/right_gripper_finger_link','fetch_hand/left_gripper_finger_link',
+                          'fork_lift/base_link']
 
     # Publish states joints: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
