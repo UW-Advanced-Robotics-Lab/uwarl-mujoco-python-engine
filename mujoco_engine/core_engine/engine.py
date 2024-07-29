@@ -35,6 +35,7 @@ from mujoco_engine.core_engine.wrapper.core import MjData, MjModel
 # import publisher and subscriber for migration with ros
 from mujoco_engine.core_engine.state_pub_mujoco import StatePublisherMujoco
 from mujoco_engine.core_engine.control_commands import ControlCommand
+from mujoco_engine.core_engine.effort_control_commands import EffortControlCommand
 
 from std_msgs.msg import Float64
 
@@ -104,13 +105,27 @@ class Mujoco_Engine:
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
         self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model)
-        self.control_commands = ControlCommand(self.mj_data)
         self.pub_time = rospy.Publisher('/simtime',Float64,queue_size=1)
         self.simtime = Float64()
+        # Effort-controllers (manipulators like WAM)
+        self.effort_control_commands = EffortControlCommand(self.mj_data)
+        # Summit
+        self.summit_base_name = "smt"
+        self.summit_cmd_vel_topic_name = "uwarl_a/robotnik_base_control/cmd_vel"
+        self.summit_control_commands = ControlCommand(self.mj_data,self.summit_cmd_vel_topic_name)
+        # Non-Holonomic bodies
+        self.fetch_base_name = "fetch"
+        self.fetch_cmd_vel_topic_name = "fetch/fetch_base_control/cmd_vel"
+        self.fetch_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
 
-        self.currentx = 0.0
-        self.currenty = 0.0
-        self.currenttheta = 0.0
+        # Initialized current Summit-base location
+        self.summit_currentx = 0.0
+        self.summit_currenty = 0.0
+        self.summit_currenttheta = 0.0
+        # Initialized current Fetch-base location
+        self.fetch_currentx = 0.0
+        self.fetch_currenty = 0.0
+        self.fetch_currenttheta = 0.0
 
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
@@ -156,14 +171,24 @@ class Mujoco_Engine:
     def _update(self, if_camera_preview=True):
 
         # Get current velocity of base for PID control
-        self.currentx = self.mj_data.body("smt/base_link").cvel[3]
-        self.currenty = self.mj_data.body("smt/base_link").cvel[4]
-        self.currenttheta = self.mj_data.body("smt/base_link").cvel[2]
+        # For Summit
+        self.summit_currentx = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
+        self.summit_currenty = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
+        self.summit_currenttheta = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
+        # For Fetch
+        self.fetch_currentx = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
+        self.fetch_currenty = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
+        self.fetch_currenttheta = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
 
         # Set control commands by simple PID control defined in "control_commands.py"
-        self.control_commands.velx_PID(25.0, 0.3, 1.3, self.currentx)   
-        self.control_commands.vely_PID(25.0, 0.3, 1.3, self.currenty)
-        self.control_commands.veltheta_PID(12.0, 0.3, 0.3, self.currenttheta)
+        # For Summit
+        self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx,self.summit_base_name)   
+        self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty,self.summit_base_name)
+        self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta,self.summit_base_name)
+        # For Fetch
+        self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx,self.fetch_base_name)   
+        self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty,self.fetch_base_name)
+        self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta,self.fetch_base_name)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
