@@ -111,7 +111,7 @@ class Mujoco_Engine:
         self.effort_control_commands = EffortControlCommand(self.mj_data)
         # Summit
         self.summit_base_name = "smt"
-        self.summit_cmd_vel_topic_name = "uwarl_a/robotnik_base_control/cmd_vel"
+        self.summit_cmd_vel_topic_name = "uwarl/robotnik_base_control/cmd_vel"
         self.summit_control_commands = ControlCommand(self.mj_data,self.summit_cmd_vel_topic_name)
         # Non-Holonomic bodies
         self.fetch_base_name = "fetch"
