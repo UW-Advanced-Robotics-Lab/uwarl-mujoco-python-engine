@@ -114,9 +114,14 @@ class Mujoco_Engine:
         self.summit_cmd_vel_topic_name = "uwarl/robotnik_base_control/cmd_vel"
         self.summit_control_commands = ControlCommand(self.mj_data,self.summit_cmd_vel_topic_name)
         # Non-Holonomic bodies
+        # Fetch
         self.fetch_base_name = "fetch"
         self.fetch_cmd_vel_topic_name = "fetch/fetch_base_control/cmd_vel"
         self.fetch_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
+        # Forklift
+        self.forklift_base_name = "fork_lift"
+        self.forklift_cmd_vel_topic_name = "fork_lift/fork_lift_base_control/cmd_vel"
+        self.forklift_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
 
         # Initialized current Summit-base location
         self.summit_currentx = 0.0
@@ -126,6 +131,10 @@ class Mujoco_Engine:
         self.fetch_currentx = 0.0
         self.fetch_currenty = 0.0
         self.fetch_currenttheta = 0.0
+        # Initialized current Forklift-base location
+        self.forklift_currentx = 0.0
+        self.forklift_currenty = 0.0
+        self.forklift_currenttheta = 0.0
 
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
@@ -179,6 +188,10 @@ class Mujoco_Engine:
         self.fetch_currentx = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
         self.fetch_currenty = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
         self.fetch_currenttheta = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
+        # For Forklift
+        self.forklift_currentx = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
+        self.forklift_currenty = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
+        self.forklift_currenttheta = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
 
         # Set control commands by simple PID control defined in "control_commands.py"
         # For Summit
@@ -189,6 +202,10 @@ class Mujoco_Engine:
         self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx,self.fetch_base_name)   
         self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty,self.fetch_base_name)
         self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta,self.fetch_base_name)
+        # For Forklift
+        self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx,self.forklift_base_name)   
+        self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty,self.forklift_base_name)
+        self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta,self.forklift_base_name)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
