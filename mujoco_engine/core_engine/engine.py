@@ -120,8 +120,8 @@ class Mujoco_Engine:
         self.fetch_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
         # Forklift
         self.forklift_base_name = "fork_lift"
-        self.forklift_cmd_vel_topic_name = "fork_lift/fork_lift_base_control/cmd_vel"
-        self.forklift_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
+        self.forklift_cmd_vel_topic_name = "fork_lift/forklift_base_control/cmd_vel"
+        self.forklift_control_commands = ControlCommand(self.mj_data,self.forklift_cmd_vel_topic_name)
 
         # Initialized current Summit-base location
         self.summit_currentx = 0.0
