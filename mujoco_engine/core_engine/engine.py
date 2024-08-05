@@ -149,8 +149,16 @@ class Mujoco_Engine:
         # cv2 window
         cv2.startWindowThread()
         self.h_min = np.Infinity
+        self.width = 0
         for camera, config in self._camera_config.items():
             self.h_min = int(min(config["height"]/CAMERA_V_FACTOR, self.h_min))
+            # Sum up width
+            self.width += config["width"]
+        
+        # Start video capture
+        self.video = cv2.VideoWriter(self._write_to+'/filename.avi',  
+                                    cv2.VideoWriter_fourcc(*'MJPG'), 
+                                    10, (self.width,self.h_min)) 
 
         
     #==================================#
@@ -247,6 +255,7 @@ class Mujoco_Engine:
                 
                 # cv2.imshow("camera views",np.uint8(np.ones((400,400,3))*100))
                 cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
+                self.video.write(cv2.hconcat(cv2_capture_window))
                 cv2.waitKey(int(1000/self._rate_Hz))
 
         self.i-=1
