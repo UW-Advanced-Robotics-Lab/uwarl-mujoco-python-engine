@@ -12,7 +12,7 @@ from tf.transformations import quaternion_inverse, quaternion_multiply
 
 class StatePublisherMujoco(object):
 
-    def __init__(self, Mujdata, Mujmodel):
+    def __init__(self, Mujdata, Mujmodel, robot_list):
 
         # Create publishers to publish mujoco link_states and joint_states
         self.pub_links = rospy.Publisher('/mujoco/link_states',LinkStates,queue_size=1)
@@ -25,37 +25,61 @@ class StatePublisherMujoco(object):
         # Define lists to publish
         # These link and joint names are from the robot-kinematic files that are read by MuJoCo.
         # In order to move them using ROS, the corresponding joints of the corresponding robots' urdf must have the same names.
-        self.jointlist =   ['bhand/f1/prox', 'bhand/f1/med', 'bhand/f1/dist', 'bhand/f2/prox', 'bhand/f2/med', 
-                            'bhand/f2/dist', 'bhand/f3/med', 'bhand/f3/dist', 'smt/orie/z', 'smt/pose/x', 'smt/pose/y', 
-                            'smt/whl_LF', 'smt/whl_LR', 'smt/whl_RF', 'smt/whl_RR', 'smt/world_x', 'smt/world_y', 'smt/world_z', 
-                            'wagon/LF', 'wagon/LF/whl', 'wagon/LR/whl', 'wagon/RF', 'wagon/RF/whl', 'wagon/RR/whl', 'wagon/handle','wagon/handle2',
-                            'wagon/slide/world_x', 'wagon/slide/world_y', 'wagon/slide/world_z', 'wagon/hinge/world_y', 'wagon/hinge/world_z',
-                            'wam/J1','wam/J2', 'wam/J3', 'wam/J4', 'wam/J5', 'wam/J6', 'wam/J7',
-                            'fetch/orie/z', 'fetch/pose/x', 'fetch/pose/y','fetch/world_x', 'fetch/world_y', 'fetch/world_z',
+        summit_wam_joint_list = ['smt/orie/z', 'smt/pose/x', 'smt/pose/y', 'smt/whl_LF', 'smt/whl_LR', 'smt/whl_RF', 'smt/whl_RR', 
+                                 'smt/world_x', 'smt/world_y', 'smt/world_z',
+                                 'wam/J1','wam/J2', 'wam/J3', 'wam/J4', 'wam/J5', 'wam/J6', 'wam/J7',
+                                 'bhand/f1/prox', 'bhand/f1/med', 'bhand/f1/dist', 'bhand/f2/prox', 'bhand/f2/med', 
+                                 'bhand/f2/dist', 'bhand/f3/med', 'bhand/f3/dist']
+        wagon_joint_list = ['wagon/LF', 'wagon/LF/whl', 'wagon/LR/whl', 'wagon/RF', 'wagon/RF/whl', 'wagon/RR/whl', 'wagon/handle','wagon/handle2',
+                            'wagon/slide/world_x', 'wagon/slide/world_y', 'wagon/slide/world_z', 'wagon/hinge/world_y', 'wagon/hinge/world_z']
+        fetch_joint_list = ['fetch/orie/z', 'fetch/pose/x', 'fetch/pose/y','fetch/world_x', 'fetch/world_y', 'fetch/world_z',
                             'fetch/R_whl','fetch/L_whl','fetch/torso_lift',
                             'fetch/head_pan','fetch/head_tilt',
                             'fetch_arm/shoulder_pan','fetch_arm/shoulder_lift','fetch_arm/upper_arm_roll','fetch_arm/elbow_flex','fetch_arm/fore_arm_roll','fetch_arm/wrist_flex','fetch_arm/wrist_roll',
-                            'fetch_hand/right_gripper_finger','fetch_hand/left_gripper_finger',
-                            'fork_lift/pose/x','fork_lift/pose/y','fork_lift/orie/z',
-                            'fork_lift/world_x','fork_lift/world_y','fork_lift/world_z']
+                            'fetch_hand/right_gripper_finger','fetch_hand/left_gripper_finger']
+        forklift_joint_list = ['fork_lift/pose/x','fork_lift/pose/y','fork_lift/orie/z',
+                               'fork_lift/world_x','fork_lift/world_y','fork_lift/world_z']
+        list_of_joint_lists = [summit_wam_joint_list,
+                               wagon_joint_list,
+                               fetch_joint_list,
+                               forklift_joint_list]
+        self.jointlist = []
+        # Concatenate joint-lists
+        counter = 0
+        for _bool in robot_list:
+            if _bool:
+                self.jointlist += list_of_joint_lists[counter]
+            counter +=1
         
-        self.linklist =  ['smt/base_link', 'smt/whl/LF_link', 'smt/whl/LR_link', 'smt/whl/RF_link', 'smt/whl/RR_link',
-                          'smt/front/camera','smt/rear/camera',
-                          'utility/wagon', 'wagon', 'wagon/LF', 'wagon/LF/whl', 'wagon/LR', 'wagon/LR/whl', 'wagon/RF', 
-                          'wagon/RF/whl', 'wagon/RR', 'wagon/RR/whl', 'wagon/handle', 'wagon/pocket', 'wagon/wire_frame', 
-                          'wam/base', 'wam/base_link', 'wam/bhand', 'wam/bhand/bhand_palm_link', 'wam/bhand/finger_1/dist_link', 
-                          'wam/bhand/finger_1/med_link', 'wam/bhand/finger_1/prox_link', 'wam/bhand/finger_2/dist_link', 
-                          'wam/bhand/finger_2/med_link', 'wam/bhand/finger_2/prox_link', 'wam/bhand/finger_3/dist_link', 
-                          'wam/bhand/finger_3/med_link', 'wam/forearm_link', 'wam/camera', #'wam/sensor/zed', 
-                          'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link', 'wam/torque_sensor_link', 'wam/upper_arm_link', 
-                          'wam/wrist_palm_link', 'wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam_7dof_bhand', 'waterloo_steel', 'world',
-                          'fetch/base_link','fetch/whl/L_link','fetch/whl/R_link','fetch/laser_link','fetch/torso_fixed_link',
-                          'fetch/torso_lift_link','fetch/bellows_link','fetch/bellows_2_link',
-                          'fetch/head_pan_link','fetch/head_tilt_link',
-                          'fetch/shoulder_pan_link','fetch/shoulder_lift_link','fetch/upper_arm_roll_link','fetch/elbow_flex_link',
-                          'fetch/fore_arm_roll_link','fetch/wrist_flex_link','fetch/wrist_roll_link','fetch/gripper_link',
-                          'fetch_hand/right_gripper_finger_link','fetch_hand/left_gripper_finger_link',
-                          'fork_lift/base_link']
+        summit_wam_link_list = ['smt/base_link', 'smt/whl/LF_link', 'smt/whl/LR_link', 'smt/whl/RF_link', 'smt/whl/RR_link',
+                                'smt/front/camera','smt/rear/camera',
+                                'wam/base', 'wam/base_link', 'wam/bhand', 'wam/bhand/bhand_palm_link', 'wam/bhand/finger_1/dist_link', 
+                                'wam/bhand/finger_1/med_link', 'wam/bhand/finger_1/prox_link', 'wam/bhand/finger_2/dist_link', 
+                                'wam/bhand/finger_2/med_link', 'wam/bhand/finger_2/prox_link', 'wam/bhand/finger_3/dist_link', 
+                                'wam/bhand/finger_3/med_link', 'wam/forearm_link', 'wam/camera', #'wam/sensor/zed', 
+                                'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link', 'wam/torque_sensor_link', 'wam/upper_arm_link', 
+                                'wam/wrist_palm_link', 'wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam_7dof_bhand', 'waterloo_steel']
+        world_link_list = ['world']
+        wagon_link_list = ['utility/wagon', 'wagon', 'wagon/LF', 'wagon/LF/whl', 'wagon/LR', 'wagon/LR/whl', 'wagon/RF', 
+                           'wagon/RF/whl', 'wagon/RR', 'wagon/RR/whl', 'wagon/handle', 'wagon/pocket', 'wagon/wire_frame']
+        fetch_link_list = ['fetch/base_link','fetch/whl/L_link','fetch/whl/R_link','fetch/laser_link','fetch/torso_fixed_link',
+                           'fetch/torso_lift_link','fetch/bellows_link','fetch/bellows_2_link',
+                           'fetch/head_pan_link','fetch/head_tilt_link',
+                           'fetch/shoulder_pan_link','fetch/shoulder_lift_link','fetch/upper_arm_roll_link','fetch/elbow_flex_link',
+                           'fetch/fore_arm_roll_link','fetch/wrist_flex_link','fetch/wrist_roll_link','fetch/gripper_link',
+                           'fetch_hand/right_gripper_finger_link','fetch_hand/left_gripper_finger_link']
+        forklift_link_list = ['fork_lift/base_link']
+        list_of_link_lists = [summit_wam_link_list,
+                              wagon_link_list,
+                              fetch_link_list,
+                              forklift_link_list]
+        self.linklist =  world_link_list
+        # Concatenate link-lists
+        counter = 0
+        for _bool in robot_list:
+            if _bool:
+                self.linklist += list_of_link_lists[counter]
+            counter +=1
 
     # Publish states joints: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
