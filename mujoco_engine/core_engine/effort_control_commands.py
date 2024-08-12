@@ -13,8 +13,9 @@ class EffortControlCommand(object):
 
     def __init__(self,mj_data):
         # Wam position effort control
-        # This topic broadcasts only those actuators which have a transmission associated with it in that robots' urdf-file.
+        # This topic broadcasts only those actuators which have an effort-based transmission associated with it in that robots' urdf-file.
         # So, other non-fixed joints that are not being controlled through a motor, like wheel joints, are not available here.
+        # Whatever are the calculated effort-commands from the (ros) controller, they are passed on to the MuJoCo model.
         self.sub_wam_pos = rospy.Subscriber("/mujoco/ros_control/effort_commands" ,JointState, self.effort_callback)
 
         # Create pointer to mujoco data
