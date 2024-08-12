@@ -7,6 +7,7 @@ import rospy
 from geometry_msgs.msg import Twist, Pose, Quaternion
 from gazebo_msgs.msg import LinkStates
 from sensor_msgs.msg import JointState
+from geometry_msgs.msg import WrenchStamped
 from tf.transformations import quaternion_inverse, quaternion_multiply
 
 
@@ -17,6 +18,11 @@ class StatePublisherMujoco(object):
         # Create publishers to publish mujoco link_states and joint_states
         self.pub_links = rospy.Publisher('/mujoco/link_states',LinkStates,queue_size=1)
         self.pub_joints = rospy.Publisher('/mujoco/joint_states',JointState,queue_size=1)
+        # Create publisher to publish mujoco sensor states
+        # https://www.roboti.us/forum/index.php?threads/reading-sensor-values.3972/
+        # Appropriate message-type in ROS
+        # http://docs.ros.org/en/jade/api/gazebo_plugins/html/group__GazeboRosFTSensor.html
+        self.pub_sensors = rospy.Publisher('/mujoco/sensor_states',WrenchStamped,queue_size=1)
         
         # Use pointer to read data
         self.data = Mujdata
