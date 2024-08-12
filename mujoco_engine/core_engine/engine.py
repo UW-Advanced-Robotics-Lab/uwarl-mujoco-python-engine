@@ -83,7 +83,8 @@ class Mujoco_Engine:
         camera_config=None, 
         name="DEFAULT", 
         CAMERA_V_FACTOR=3,
-        write_to = None
+        write_to = None,
+        robot_list = None
     ):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -95,6 +96,8 @@ class Mujoco_Engine:
         self._rate_scene = rate_scene
         # Write camera images to a folder
         self._write_to = write_to
+        # Which robot joints and bodies should be published
+        self._robot_list = robot_list
 
         # Calculate rendering freq
         self.steps_per_render = round(float(self._rate_Hz)/float(self._rate_scene))
@@ -104,7 +107,7 @@ class Mujoco_Engine:
         ## Initiate MJ
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
-        self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model)
+        self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model, self._robot_list)
         self.pub_time = rospy.Publisher('/simtime',Float64,queue_size=1)
         self.simtime = Float64()
         # Effort-controllers (manipulators like WAM)
