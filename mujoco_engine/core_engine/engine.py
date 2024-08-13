@@ -266,6 +266,8 @@ class Mujoco_Engine:
         # Publish link_states and joint_states
         self.state_pub.pub_joint_states()
         self.state_pub.pub_link_states()
+        self.state_pub.pub_sensor_states()
+
 
         # Publish simulation time
         self.simtime.data = self.mj_data.time

@@ -87,7 +87,10 @@ class StatePublisherMujoco(object):
                 self.linklist += list_of_link_lists[counter]
             counter +=1
 
-    # Publish states joints: relative to initial state (which is 0.0 for all joints)
+        # Sensor list
+        self.sensor_list = ['force_sensor','torque_sensor']
+
+    # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
 
         # Initialize joint_state object
@@ -112,7 +115,7 @@ class StatePublisherMujoco(object):
         self.pub_joints.publish(self.joint_state)
 
 
-    # Publish states links WAM: relative to initial state, therefore, transform summit parent base_link and wagon parent utility/wagon
+    # Publish link states: relative to initial state, therefore, transform summit parent base_link, wagon parent utility/wagon, and forklift parent forklift/base_link
     def pub_link_states(self):
 
         # Initialize link_states object
@@ -171,6 +174,25 @@ class StatePublisherMujoco(object):
                 new_orient.z = new_quat[2]
                 new_orient.w = new_quat[3]
                 pos.orientation = new_orient
+            
+            elif name == 'fork_lift/base_link':
+                id_new = self.model.name2id('fork_lift_1','body')
+                original_orient.x = self.model.body_quat[id_new][1]
+                original_orient.y = self.model.body_quat[id_new][2]
+                original_orient.z = self.model.body_quat[id_new][3]
+                original_orient.w = self.model.body_quat[id_new][0]
+
+                # Rotate wagon utility/wagon back to 0.0 degrees
+                orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
+                orie_quat = [orient.x,orient.y,orient.z,orient.w]
+                inv_quat = quaternion_inverse(orig_quat)
+                new_quat = quaternion_multiply(orie_quat,inv_quat)
+                new_orient = Quaternion()
+                new_orient.x = new_quat[0]
+                new_orient.y = new_quat[1]
+                new_orient.z = new_quat[2]
+                new_orient.w = new_quat[3]
+                pos.orientation = new_orient
    
             else:
                 pos.orientation = orient
@@ -191,3 +213,30 @@ class StatePublisherMujoco(object):
         # Publish link_states
         self.pub_links.publish(self.link_states)
 
+    # Publish sensor states: relative to initial state (which is 0.0 for all sensors)
+    def pub_sensor_states(self):
+
+        # Initialize force-torque sensor-state object
+        self.force_torque_state_stamped = WrenchStamped()
+        # Sensor data list-form
+        sensor_data = []
+        for sensor_name in self.sensor_list:
+            # https://www.roboti.us/forum/index.php?threads/reading-sensor-values.3972/#post-5368
+            id_new = self.model.name2id(sensor_name,'sensor')
+            # Sensor index
+            sensor_index = self.model.sensor_adr[id_new]
+            # Sensor dimension
+            sensor_dim = self.model.sensor_dim[id_new]
+            # Append sensor data
+            sensor_data.append(self.data.sensordata[sensor_index:(sensor_index+sensor_dim)])
+        
+        # print(sensor_data[0][0])
+        self.force_torque_state_stamped.header.stamp = rospy.Time.now()
+        self.force_torque_state_stamped.wrench.force.x = sensor_data[0][0]
+        self.force_torque_state_stamped.wrench.force.y = sensor_data[0][1]
+        self.force_torque_state_stamped.wrench.force.z = sensor_data[0][2]
+        self.force_torque_state_stamped.wrench.torque.x = sensor_data[1][0]
+        self.force_torque_state_stamped.wrench.torque.y = sensor_data[1][1]
+        self.force_torque_state_stamped.wrench.torque.z = sensor_data[1][2]
+        # Publish force_torque_state
+        self.pub_sensors.publish(self.force_torque_state_stamped)
