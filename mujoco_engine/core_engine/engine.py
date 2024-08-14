@@ -192,31 +192,41 @@ class Mujoco_Engine:
 
         # Get current velocity of base for PID control
         # For Summit
-        self.summit_currentx = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
-        self.summit_currenty = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
-        self.summit_currenttheta = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
+        if (self._robot_list[0]):
+            self.summit_currentx = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
+            self.summit_currenty = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
+            self.summit_currenttheta = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
+        
         # For Fetch
-        self.fetch_currentx = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
-        self.fetch_currenty = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
-        self.fetch_currenttheta = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
+        if (self._robot_list[1]):
+            self.fetch_currentx = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
+            self.fetch_currenty = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
+            self.fetch_currenttheta = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
+        
         # For Forklift
-        self.forklift_currentx = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
-        self.forklift_currenty = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
-        self.forklift_currenttheta = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
+        if (self._robot_list[2]):
+            self.forklift_currentx = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
+            self.forklift_currenty = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
+            self.forklift_currenttheta = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
 
         # Set control commands by simple PID control defined in "control_commands.py"
         # For Summit
-        self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx,self.summit_base_name)   
-        self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty,self.summit_base_name)
-        self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta,self.summit_base_name)
+        if (self._robot_list[0]):
+            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx,self.summit_base_name)   
+            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty,self.summit_base_name)
+            self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta,self.summit_base_name)
+        
         # For Fetch
-        self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx,self.fetch_base_name)   
-        self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty,self.fetch_base_name)
-        self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta,self.fetch_base_name)
+        if (self._robot_list[1]):
+            self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx,self.fetch_base_name)   
+            self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty,self.fetch_base_name)
+            self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta,self.fetch_base_name)
+        
         # For Forklift
-        self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx,self.forklift_base_name)   
-        self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty,self.forklift_base_name)
-        self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta,self.forklift_base_name)
+        if (self._robot_list[2]):
+            self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx,self.forklift_base_name)   
+            self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty,self.forklift_base_name)
+            self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta,self.forklift_base_name)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
