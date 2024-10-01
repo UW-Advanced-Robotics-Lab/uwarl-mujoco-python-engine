@@ -46,9 +46,9 @@ class StatePublisherMujoco(object):
         forklift_joint_list = ['fork_lift/pose/x','fork_lift/pose/y','fork_lift/orie/z',
                                'fork_lift/world_x','fork_lift/world_y','fork_lift/world_z']
         list_of_joint_lists = [summit_wam_joint_list,
-                               wagon_joint_list,
                                fetch_joint_list,
-                               forklift_joint_list]
+                               forklift_joint_list,
+                               wagon_joint_list]
         self.jointlist = []
         # Concatenate joint-lists
         counter = 0
@@ -76,9 +76,9 @@ class StatePublisherMujoco(object):
                            'fetch_hand/right_gripper_finger_link','fetch_hand/left_gripper_finger_link']
         forklift_link_list = ['fork_lift/base_link']
         list_of_link_lists = [summit_wam_link_list,
-                              wagon_link_list,
                               fetch_link_list,
-                              forklift_link_list]
+                              forklift_link_list,
+                              wagon_link_list]
         self.linklist =  world_link_list
         # Concatenate link-lists
         counter = 0
