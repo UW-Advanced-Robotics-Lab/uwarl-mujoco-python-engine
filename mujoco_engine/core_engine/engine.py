@@ -258,27 +258,27 @@ class Mujoco_Engine:
 
                 # - capture view:
                 camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
-            
                 # render captured views on cv2      
                 cv2_capture_window = []
-                for camera_name, camera_buf in camera_sensor_data["frame_buffer"].items():
-                    img = cv2.cvtColor(camera_buf, cv2.COLOR_RGB2BGR)
+                for camera_buf, frame_time_stamp in zip(camera_sensor_data["frame_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
+                    img = cv2.cvtColor(camera_buf[1], cv2.COLOR_RGB2BGR)
                     img = cv2.flip(img, 0)
                     img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
                     # if self._write_to: #[NOT-USED: Implementation to save frames directly]
                     #     imageio.imwrite(
-                    #         "{}/{}.png".format(self._write_to, camera_name.replace("/", "_")), 
+                    #         "{}/{}_{}.png".format(self._write_to, camera_buf[0].replace("/", "_"), frame_time_stamp[1]), 
                     #         img
                     #     )
                     cv2_capture_window.append(img)
-                # Write depth-image
+                # Write depth-image (check if we have actually enabled depth-sensor capabilities in the camera-plugin used when defining a camera-sensor.)
                 # if self._write_to: #[NOT-USED: Implementation to save frames directly]
-                #     for camera_name, camera_buf in camera_sensor_data["depth_buffer"].items():
+                #     for camera_depth_buf, frame_time_stamp in zip(camera_sensor_data["depth_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
+                #         # Covert float-type gray-scale to uint8 (https://stackoverflow.com/a/60014123/19163020)
+                #         uint_8_img = (camera_depth_buf[1]*255).astype(np.uint8)
                 #         imageio.imwrite(
-                #             "{}/{}_gray.png".format(self._write_to, camera_name.replace("/", "_")), 
-                #             camera_buf
+                #             "{}/{}_{}_gray.png".format(self._write_to, camera_depth_buf[0].replace("/", "_"), frame_time_stamp[1]), 
+                #             uint_8_img
                 #         )
-                # cv2.imshow("camera views",np.uint8(np.ones((400,400,3))*100))
                 cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
                 self.video.write(cv2.hconcat(cv2_capture_window))
                 cv2.waitKey(int(1000/self._rate_Hz))
