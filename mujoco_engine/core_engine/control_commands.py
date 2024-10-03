@@ -11,13 +11,12 @@ from sensor_msgs.msg import JointState
 
 class ControlCommand(object):
 
-    def __init__(self,mj_data):
+    def __init__(self,mj_data,cmd_vel_topic_name):
         # Base velocity effort control
-        self.sub_vel_base = rospy.Subscriber("uwarl_a/robotnik_base_control/cmd_vel", Twist, self.vel_base_callback)
-        # Wam position effort control
-        self.sub_wam_pos = rospy.Subscriber("/mujoco/ros_control/effort_commands" ,JointState, self.effort_callback)
+        self.sub_vel_base_summ = rospy.Subscriber(cmd_vel_topic_name, Twist, self.vel_base_callback)
 
         # Create pointer to mujoco data
+        # This contains references to joints which have actuators associated with them (they are mentioned in files similar to `include_summit_wam_bhand_actuators.xml`)
         self.mj_data_control = mj_data
 
         # Initialize PID variables for base velocity effort control
@@ -41,12 +40,11 @@ class ControlCommand(object):
         # New velocity commands are received at approximately 50 Hz, PID loop runs at 200 Hz
         self.vel_base = [msg.linear.x, msg.linear.y, msg.angular.z]
 
-
-    # PID loop to control x velocity in map frame
-    def velx_PID(self, Kp, Ki, Kd, CP):
+    # PID loop to control x velocity of non-holonomic-robot in map frame
+    def velx_PID(self, Kp, Ki, Kd, CP, base_name):
 
         # Convert reference velocities into mapframe
-        SP = self.vel_base[0]*cos(self.mj_data_control.joint('smt/orie/z').qpos[0])+self.vel_base[1]*-sin(self.mj_data_control.joint('smt/orie/z').qpos[0])
+        SP = self.vel_base[0]*cos(self.mj_data_control.joint(base_name+'/orie/z').qpos[0])+self.vel_base[1]*-sin(self.mj_data_control.joint(base_name+'/orie/z').qpos[0])
 
         t = rospy.Time().now().to_time()
         ex = float(SP - CP)
@@ -62,14 +60,14 @@ class ControlCommand(object):
         control = P+self.Ix+D
 
         # Set control commands in mj_data
-        self.mj_data_control.actuator('smt/pose/x').ctrl = control
+        self.mj_data_control.actuator(base_name+'/pose/x').ctrl = control
 
 
-    # PID loop to control y velocity in map frame
-    def vely_PID(self, Kp, Ki, Kd, CP):
+    # PID loop to control y velocity of holonomic-robot in map frame
+    def vely_PID(self, Kp, Ki, Kd, CP, base_name):
 
         # Convert reference velocities into mapframe
-        SP = self.vel_base[0]*sin(self.mj_data_control.joint('smt/orie/z').qpos[0])+self.vel_base[1]*cos(self.mj_data_control.joint('smt/orie/z').qpos[0])
+        SP = self.vel_base[0]*sin(self.mj_data_control.joint(base_name+'/orie/z').qpos[0])+self.vel_base[1]*cos(self.mj_data_control.joint(base_name+'/orie/z').qpos[0])
 
         t = rospy.Time().now().to_time()
         ey = float(SP - CP)
@@ -85,11 +83,11 @@ class ControlCommand(object):
         control = P+self.Iy+D
 
         # Set control commands in mj_data
-        self.mj_data_control.actuator('smt/pose/y').ctrl = control
+        self.mj_data_control.actuator(base_name+'/pose/y').ctrl = control
 
     
-    # PID loop to control yaw rate in map frame
-    def veltheta_PID(self, Kp, Ki, Kd, CP):
+    # PID loop to control yaw rate of holonomic-robot in map frame
+    def veltheta_PID(self, Kp, Ki, Kd, CP,base_name):
 
         SP = self.vel_base[2]
 
@@ -107,20 +105,4 @@ class ControlCommand(object):
         control = P+self.Itheta+D
 
         # Set control commands in mj_data
-        self.mj_data_control.actuator('smt/orie/z').ctrl = control
-
-
-    # Callback for hw_sim_interface effort commands
-    def effort_callback(self, msg):
-        self.efforts = msg
-        i = 0
-        # Set control commands in mj_data
-        for i in range(0, len(self.efforts.name)):
-
-            # Add "/F" for wam force actuators
-            if self.efforts.name[i]>="wam":
-                self.mj_data_control.actuator(self.efforts.name[i]+'/F').ctrl = self.efforts.effort[i]
-            else:
-                self.mj_data_control.actuator(self.efforts.name[i]).ctrl = self.efforts.effort[i]
-
-            i+=1
+        self.mj_data_control.actuator(base_name+'/orie/z').ctrl = control

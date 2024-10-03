@@ -23,7 +23,6 @@ import signal
 import numpy as np
 import mujoco
 import cv2
-import imageio
 
 import rospy
 
@@ -34,9 +33,8 @@ import mujoco_viewer
 from mujoco_engine.core_engine.wrapper.core import MjData, MjModel
 
 # import publisher and subscriber for migration with ros
-from mujoco_engine.core_engine.state_pub_mujoco import StatePublisherMujoco
+from mujoco_engine.core_engine.state_pub_mujoco_peg_in_hole import StatePublisherMujoco
 from mujoco_engine.core_engine.control_commands import ControlCommand
-from mujoco_engine.core_engine.effort_control_commands import EffortControlCommand
 
 from std_msgs.msg import Float64
 
@@ -68,9 +66,9 @@ class Mujoco_Engine:
     #  C O N S T A N T  #
     #===================#
     _camera_config = {
-        # "camera/zed/L": {"width": 1280, "height":720, "fps": 60, "id":1},
-        # "camera/zed/R": {"width": 1280, "height":720, "fps": 60, "id":0},
-        "camera/intel/rgb": {"width": 1280, "height":720, "fps": 60, "id":0}
+        "camera/zed/L": {"width": 1280, "height":720, "fps": 60, "id":1},
+        "camera/zed/R": {"width": 1280, "height":720, "fps": 60, "id":0},
+        "camera/intel/rgb": {"width": 1280, "height":720, "fps": 60, "id":2},
     }
     _camera_views = {}
     _IC_state = None
@@ -83,9 +81,7 @@ class Mujoco_Engine:
         xml_path, rate_Hz, rate_scene,
         camera_config=None, 
         name="DEFAULT", 
-        CAMERA_V_FACTOR=3,
-        write_to = None,
-        robot_list = None
+        CAMERA_V_FACTOR=3
     ):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -95,10 +91,6 @@ class Mujoco_Engine:
         self._name = name
         self._rate_Hz = rate_Hz
         self._rate_scene = rate_scene
-        # Write camera images to a folder
-        self._write_to = write_to
-        # Which robot joints and bodies should be published
-        self._robot_list = robot_list
 
         # Calculate rendering freq
         self.steps_per_render = round(float(self._rate_Hz)/float(self._rate_scene))
@@ -108,43 +100,20 @@ class Mujoco_Engine:
         ## Initiate MJ
         self.mj_model = MjModel.from_xml_path(xml_path=xml_path)
         self.mj_data = MjData(self.mj_model)
-        self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model, self._robot_list)
+        self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model)
+        self.control_commands = ControlCommand(self.mj_data)
         self.pub_time = rospy.Publisher('/simtime',Float64,queue_size=1)
         self.simtime = Float64()
-        # Effort-controllers (manipulators like WAM)
-        self.effort_control_commands = EffortControlCommand(self.mj_data)
-        # Summit
-        self.summit_base_name = "smt"
-        self.summit_cmd_vel_topic_name = "uwarl/robotnik_base_control/cmd_vel"
-        self.summit_control_commands = ControlCommand(self.mj_data,self.summit_cmd_vel_topic_name)
-        # Non-Holonomic bodies
-        # Fetch
-        self.fetch_base_name = "fetch"
-        self.fetch_cmd_vel_topic_name = "fetch/fetch_base_control/cmd_vel"
-        self.fetch_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
-        # Forklift
-        self.forklift_base_name = "fork_lift"
-        self.forklift_cmd_vel_topic_name = "fork_lift/forklift_base_control/cmd_vel"
-        self.forklift_control_commands = ControlCommand(self.mj_data,self.forklift_cmd_vel_topic_name)
 
-        # Initialized current Summit-base location
-        self.summit_currentx = 0.0
-        self.summit_currenty = 0.0
-        self.summit_currenttheta = 0.0
-        # Initialized current Fetch-base location
-        self.fetch_currentx = 0.0
-        self.fetch_currenty = 0.0
-        self.fetch_currenttheta = 0.0
-        # Initialized current Forklift-base location
-        self.forklift_currentx = 0.0
-        self.forklift_currenty = 0.0
-        self.forklift_currenttheta = 0.0
+        self.currentx = 0.0
+        self.currenty = 0.0
+        self.currenttheta = 0.0
 
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
             title="Mujoco-Engine", 
             sensor_config=self._camera_config,
-            window_size=(1920,1080),
+            window_size=(1280,720),
         )
         # if len(self._camera_config):
         #     self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
@@ -153,16 +122,8 @@ class Mujoco_Engine:
         # cv2 window
         cv2.startWindowThread()
         self.h_min = np.Infinity
-        self.width = 0
         for camera, config in self._camera_config.items():
             self.h_min = int(min(config["height"]/CAMERA_V_FACTOR, self.h_min))
-            # Sum up width
-            self.width += config["width"]
-        
-        # Start video capture
-        self.video = cv2.VideoWriter(self._write_to+'/filename.avi',  
-                                    cv2.VideoWriter_fourcc(*'MJPG'), 
-                                    10, (self.width,self.h_min)) 
 
         
     #==================================#
@@ -189,45 +150,17 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
-    def _update(self, if_camera_preview=True):
+    def _update(self, if_camera_preview=False):
 
         # Get current velocity of base for PID control
-        # For Summit
-        if (self._robot_list[0]):
-            self.summit_currentx = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
-            self.summit_currenty = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
-            self.summit_currenttheta = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
-        
-        # For Fetch
-        if (self._robot_list[1]):
-            self.fetch_currentx = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
-            self.fetch_currenty = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
-            self.fetch_currenttheta = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
-        
-        # For Forklift
-        if (self._robot_list[2]):
-            self.forklift_currentx = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
-            self.forklift_currenty = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
-            self.forklift_currenttheta = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
+        # self.currentx = self.mj_data.body("smt/base_link").cvel[3]
+        # self.currenty = self.mj_data.body("smt/base_link").cvel[4]
+        # self.currenttheta = self.mj_data.body("smt/base_link").cvel[2]
 
         # Set control commands by simple PID control defined in "control_commands.py"
-        # For Summit
-        if (self._robot_list[0]):
-            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx,self.summit_base_name)   
-            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty,self.summit_base_name)
-            self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta,self.summit_base_name)
-        
-        # For Fetch
-        if (self._robot_list[1]):
-            self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx,self.fetch_base_name)   
-            self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty,self.fetch_base_name)
-            self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta,self.fetch_base_name)
-        
-        # For Forklift
-        if (self._robot_list[2]):
-            self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx,self.forklift_base_name)   
-            self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty,self.forklift_base_name)
-            self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta,self.forklift_base_name)
+        # self.control_commands.velx_PID(25.0, 0.3, 1.3, self.currentx)   
+        # self.control_commands.vely_PID(25.0, 0.3, 1.3, self.currenty)
+        # self.control_commands.veltheta_PID(12.0, 0.3, 0.3, self.currenttheta)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
@@ -258,38 +191,22 @@ class Mujoco_Engine:
 
                 # - capture view:
                 camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
+            
                 # render captured views on cv2      
                 cv2_capture_window = []
-                for camera_buf, frame_time_stamp in zip(camera_sensor_data["frame_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
-                    img = cv2.cvtColor(camera_buf[1], cv2.COLOR_RGB2BGR)
+                for camera_name, camera_buf in camera_sensor_data["frame_buffer"].items():
+                    img = cv2.cvtColor(camera_buf, cv2.COLOR_RGB2BGR)
                     img = cv2.flip(img, 0)
                     img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
-                    # if self._write_to: #[NOT-USED: Implementation to save frames directly]
-                    #     imageio.imwrite(
-                    #         "{}/{}_{}.png".format(self._write_to, camera_buf[0].replace("/", "_"), frame_time_stamp[1]), 
-                    #         img
-                    #     )
                     cv2_capture_window.append(img)
-                # Write depth-image (check if we have actually enabled depth-sensor capabilities in the camera-plugin used when defining a camera-sensor.)
-                # if self._write_to: #[NOT-USED: Implementation to save frames directly]
-                #     for camera_depth_buf, frame_time_stamp in zip(camera_sensor_data["depth_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
-                #         # Covert float-type gray-scale to uint8 (https://stackoverflow.com/a/60014123/19163020)
-                #         uint_8_img = (camera_depth_buf[1]*255).astype(np.uint8)
-                #         imageio.imwrite(
-                #             "{}/{}_{}_gray.png".format(self._write_to, camera_depth_buf[0].replace("/", "_"), frame_time_stamp[1]), 
-                #             uint_8_img
-                #         )
+                    
                 cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
-                self.video.write(cv2.hconcat(cv2_capture_window))
-                cv2.waitKey(int(1000/self._rate_Hz))
 
         self.i-=1
 
         # Publish link_states and joint_states
         self.state_pub.pub_joint_states()
         self.state_pub.pub_link_states()
-        self.state_pub.pub_sensor_states()
-
 
         # Publish simulation time
         self.simtime.data = self.mj_data.time
