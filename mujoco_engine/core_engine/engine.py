@@ -23,6 +23,7 @@ import signal
 import numpy as np
 import mujoco
 import cv2
+import imageio
 
 import rospy
 
@@ -256,7 +257,7 @@ class Mujoco_Engine:
                 self.mj_viewer.render_sensor_cameras_safe()
 
                 # - capture view:
-                camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe(self._write_to)
+                camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
             
                 # render captured views on cv2      
                 cv2_capture_window = []
@@ -264,8 +265,19 @@ class Mujoco_Engine:
                     img = cv2.cvtColor(camera_buf, cv2.COLOR_RGB2BGR)
                     img = cv2.flip(img, 0)
                     img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
+                    # if self._write_to: #[NOT-USED: Implementation to save frames directly]
+                    #     imageio.imwrite(
+                    #         "{}/{}.png".format(self._write_to, camera_name.replace("/", "_")), 
+                    #         img
+                    #     )
                     cv2_capture_window.append(img)
-                
+                # Write depth-image
+                # if self._write_to: #[NOT-USED: Implementation to save frames directly]
+                #     for camera_name, camera_buf in camera_sensor_data["depth_buffer"].items():
+                #         imageio.imwrite(
+                #             "{}/{}_gray.png".format(self._write_to, camera_name.replace("/", "_")), 
+                #             camera_buf
+                #         )
                 # cv2.imshow("camera views",np.uint8(np.ones((400,400,3))*100))
                 cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
                 self.video.write(cv2.hconcat(cv2_capture_window))
