@@ -114,18 +114,21 @@ class Mujoco_Engine:
         # Effort-controllers (manipulators like WAM)
         self.effort_control_commands = EffortControlCommand(self.mj_data)
         # Summit
-        self.summit_base_name = "smt"
-        self.summit_cmd_vel_topic_name = "uwarl/robotnik_base_control/cmd_vel"
-        self.summit_control_commands = ControlCommand(self.mj_data,self.summit_cmd_vel_topic_name)
+        if (self._robot_list[0]):
+            self.summit_base_name = "smt"
+            self.summit_cmd_vel_topic_name = "uwarl/robotnik_base_control/cmd_vel"
+            self.summit_control_commands = ControlCommand(self.mj_data,self.summit_cmd_vel_topic_name)
         # Non-Holonomic bodies
         # Fetch
-        self.fetch_base_name = "fetch"
-        self.fetch_cmd_vel_topic_name = "fetch/fetch_base_control/cmd_vel"
-        self.fetch_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
+        if (self._robot_list[1]):
+            self.fetch_base_name = "fetch"
+            self.fetch_cmd_vel_topic_name = "fetch/fetch_base_control/cmd_vel"
+            self.fetch_control_commands = ControlCommand(self.mj_data,self.fetch_cmd_vel_topic_name)
         # Forklift
-        self.forklift_base_name = "fork_lift"
-        self.forklift_cmd_vel_topic_name = "fork_lift/forklift_base_control/cmd_vel"
-        self.forklift_control_commands = ControlCommand(self.mj_data,self.forklift_cmd_vel_topic_name)
+        if (self._robot_list[2]):
+            self.forklift_base_name = "fork_lift"
+            self.forklift_cmd_vel_topic_name = "fork_lift/forklift_base_control/cmd_vel"
+            self.forklift_control_commands = ControlCommand(self.mj_data,self.forklift_cmd_vel_topic_name)
 
         # Initialized current Summit-base location
         self.summit_currentx = 0.0
