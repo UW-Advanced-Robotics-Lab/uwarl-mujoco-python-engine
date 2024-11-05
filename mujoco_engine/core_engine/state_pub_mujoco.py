@@ -4,10 +4,10 @@
 # Last version: Nov 28, 2023 Tim van Meijel
 
 import rospy
-from geometry_msgs.msg import Twist, Pose, Quaternion
+from geometry_msgs.msg import Accel, Twist, Pose, Quaternion, WrenchStamped
 from gazebo_msgs.msg import LinkStates
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import WrenchStamped
+from uwarl_mujoco_ros_msgs.msg import JointStateArray, LinkStateArray
 from tf.transformations import quaternion_inverse, quaternion_multiply
 
 
@@ -22,8 +22,12 @@ class StatePublisherMujoco(object):
         # https://www.roboti.us/forum/index.php?threads/reading-sensor-values.3972/
         # Appropriate message-type in ROS
         # http://docs.ros.org/en/jade/api/gazebo_plugins/html/group__GazeboRosFTSensor.html
-        self.pub_sensors = rospy.Publisher('/mujoco/sensor_states',WrenchStamped,queue_size=1)
+        self.pub_ft_sensor = rospy.Publisher('/mujoco/ft_sensor_states',WrenchStamped,queue_size=1)
+        self.pub_link_state_sensor = rospy.Publisher('/mujoco/link_state_sensor_states',LinkStateArray,queue_size=1)
+        self.pub_joint_state_sensor = rospy.Publisher('/mujoco/joint_state_sensor_states',JointStateArray,queue_size=1)
         
+        # Initialize counter
+        self.counter = 0
         # Use pointer to read data
         self.data = Mujdata
         self.model = Mujmodel
@@ -88,7 +92,15 @@ class StatePublisherMujoco(object):
             counter +=1
 
         # Sensor list
-        self.sensor_list = ['force_sensor','torque_sensor']
+        self.sensor_list = ['accelerometer_mb','velocimeter_mb','gyroscope_mb','global_pos_mb','global_quat_mb',
+                            'accelerometer_wam_shoulder_yaw','velocimeter_wam_shoulder_yaw','gyroscope_wam_shoulder_yaw','global_pos_wam_shoulder_yaw','global_quat_wam_shoulder_yaw','joint_pos_wam_shoulder_yaw','joint_vel_wam_shoulder_yaw',
+                            'accelerometer_wam_shoulder_pitch','velocimeter_wam_shoulder_pitch','gyroscope_wam_shoulder_pitch','global_pos_wam_shoulder_pitch','global_quat_wam_shoulder_pitch','joint_pos_wam_shoulder_pitch','joint_vel_wam_shoulder_pitch',
+                            'accelerometer_wam_upper_arm','velocimeter_wam_upper_arm','gyroscope_wam_upper_arm','global_pos_wam_upper_arm','global_quat_wam_upper_arm','joint_pos_wam_upper_arm','joint_vel_wam_upper_arm',
+                            'accelerometer_wam_forearm','velocimeter_wam_forearm','gyroscope_wam_forearm','global_pos_wam_forearm','global_quat_wam_forearm','joint_pos_wam_forearm','joint_vel_wam_forearm',
+                            'accelerometer_wam_wrist_yaw','velocimeter_wam_wrist_yaw','gyroscope_wam_wrist_yaw','global_pos_wam_wrist_yaw','global_quat_wam_wrist_yaw','joint_pos_wam_wrist_yaw','joint_vel_wam_wrist_yaw',
+                            'accelerometer_wam_wrist_pitch','velocimeter_wam_wrist_pitch','gyroscope_wam_wrist_pitch','global_pos_wam_wrist_pitch','global_quat_wam_wrist_pitch','joint_pos_wam_wrist_pitch','joint_vel_wam_wrist_pitch',
+                            'accelerometer_wam_wrist_palm','velocimeter_wam_wrist_palm','gyroscope_wam_wrist_palm','global_pos_wam_wrist_palm','global_quat_wam_wrist_palm','joint_pos_wam_wrist_palm','joint_vel_wam_wrist_palm',
+                            'force_sensor','torque_sensor']
 
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
@@ -205,6 +217,13 @@ class StatePublisherMujoco(object):
             vel.linear.y = self.data.body(name).cvel[4]
             vel.linear.z = self.data.body(name).cvel[5]
 
+            # if name == 'smt/base_link':
+            #     print("MB yaw-rate error")
+            #     print(self.data.body(name).cvel[2]-self.data.joint('smt/orie/z').qvel[0])
+            # if name == 'wam/shoulder_yaw_link':
+            #     print('Shoulder yaw yaw-rate error')
+            #     print(self.data.body(name).cvel[2]-self.data.joint('smt/orie/z').qvel[0]-self.data.joint('wam/J1').qvel[0])
+
             # Add them in array with link_states
             self.link_states.name.append(name)
             self.link_states.pose.append(pos)
@@ -216,8 +235,13 @@ class StatePublisherMujoco(object):
     # Publish sensor states: relative to initial state (which is 0.0 for all sensors)
     def pub_sensor_states(self):
 
-        # Initialize force-torque sensor-state object
-        self.force_torque_state_stamped = WrenchStamped()
+        # Initialize sensor objects:
+        # Link States
+        link_state_stamped = LinkStateArray()
+        # Joint States
+        joint_state_stamped = JointStateArray()
+        # Force-torque sensor-state object
+        force_torque_state_stamped = WrenchStamped()
         # Sensor data list-form
         sensor_data = []
         for sensor_name in self.sensor_list:
@@ -230,13 +254,68 @@ class StatePublisherMujoco(object):
             # Append sensor data
             sensor_data.append(self.data.sensordata[sensor_index:(sensor_index+sensor_dim)])
         
-        # print(sensor_data[0][0])
-        self.force_torque_state_stamped.header.stamp = rospy.Time.now()
-        self.force_torque_state_stamped.wrench.force.x = sensor_data[0][0]
-        self.force_torque_state_stamped.wrench.force.y = sensor_data[0][1]
-        self.force_torque_state_stamped.wrench.force.z = sensor_data[0][2]
-        self.force_torque_state_stamped.wrench.torque.x = sensor_data[1][0]
-        self.force_torque_state_stamped.wrench.torque.y = sensor_data[1][1]
-        self.force_torque_state_stamped.wrench.torque.z = sensor_data[1][2]
+        # Current time
+        curr_time = rospy.Time.now()
+        link_state_stamped.header.stamp = curr_time
+        joint_state_stamped.header.stamp = curr_time
+        link_state_stamped.header.seq = self.counter
+        joint_state_stamped.header.seq = self.counter
+
+        # Mobile-base
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[0][0]
+        temp_accel.linear.y = sensor_data[0][1]
+        temp_accel.linear.z = sensor_data[0][2]
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name = "smt/base_link"
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[1][0]
+        temp_twist.linear.y = sensor_data[1][1]
+        temp_twist.linear.z = sensor_data[1][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[2][0]
+        temp_twist.angular.y = sensor_data[2][1]
+        temp_twist.angular.z = sensor_data[2][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[3][0]
+        temp_pose.position.y = sensor_data[3][1]
+        temp_pose.position.z = sensor_data[3][2]
+        temp_pose.orientation.w = sensor_data[4][0]
+        temp_pose.orientation.x = sensor_data[4][1]
+        temp_pose.orientation.y = sensor_data[4][2]
+        temp_pose.orientation.z = sensor_data[4][3]
+        link_state_stamped.pose.append(temp_pose)
+        # WAM
+        # Shoulder Yaw Link
+
+        # Shoulder Pitch Link
+
+        # Upper Arm Link
+
+        # Forearm Link
+
+        # Wrist Yaw Link
+
+        # Wrist Pitch Link
+
+        # Wrist Palm Link
+
+        # Force Torque Sensor
+        force_torque_state_stamped.header.stamp = curr_time
+        force_torque_state_stamped.header.seq = self.counter
+        force_torque_state_stamped.wrench.force.x = sensor_data[0][0]
+        force_torque_state_stamped.wrench.force.y = sensor_data[0][1]
+        force_torque_state_stamped.wrench.force.z = sensor_data[0][2]
+        force_torque_state_stamped.wrench.torque.x = sensor_data[1][0]
+        force_torque_state_stamped.wrench.torque.y = sensor_data[1][1]
+        force_torque_state_stamped.wrench.torque.z = sensor_data[1][2]
         # Publish force_torque_state
-        self.pub_sensors.publish(self.force_torque_state_stamped)
+        self.pub_ft_sensor.publish(force_torque_state_stamped)
+        # Increment counter
+        self.counter +=1
