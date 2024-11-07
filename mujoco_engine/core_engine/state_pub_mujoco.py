@@ -291,10 +291,25 @@ class StatePublisherMujoco(object):
         temp_pose.position.x = sensor_data[3][0]
         temp_pose.position.y = sensor_data[3][1]
         temp_pose.position.z = sensor_data[3][2]
-        temp_pose.orientation.w = sensor_data[4][0]
-        temp_pose.orientation.x = sensor_data[4][1]
-        temp_pose.orientation.y = sensor_data[4][2]
-        temp_pose.orientation.z = sensor_data[4][3]
+
+        # Correct mobile-base orientation
+        original_orient = Quaternion()
+        id_new = self.model.name2id('waterloo_steel','body')
+        original_orient.x = self.model.body_quat[id_new][1]
+        original_orient.y = self.model.body_quat[id_new][2]
+        original_orient.z = self.model.body_quat[id_new][3]
+        original_orient.w = self.model.body_quat[id_new][0]
+
+        # Rotate summit base_link back to 0.0 degrees
+        orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
+        orie_quat = [sensor_data[4][1],sensor_data[4][2],sensor_data[4][3],sensor_data[4][0]]
+        inv_quat = quaternion_inverse(orig_quat)
+        new_quat = quaternion_multiply(orie_quat,inv_quat)
+
+        temp_pose.orientation.w = new_quat[3]
+        temp_pose.orientation.x = new_quat[0]
+        temp_pose.orientation.y = new_quat[1]
+        temp_pose.orientation.z = new_quat[2]
         link_state_stamped.pose.append(temp_pose)
 
         # WAM
