@@ -101,7 +101,16 @@ class StatePublisherMujoco(object):
                             'accelerometer_wam_wrist_yaw','velocimeter_wam_wrist_yaw','gyroscope_wam_wrist_yaw','global_pos_wam_wrist_yaw','global_quat_wam_wrist_yaw','joint_pos_wam_wrist_yaw','joint_vel_wam_wrist_yaw','joint_effort_wam_wrist_yaw',
                             'accelerometer_wam_wrist_pitch','velocimeter_wam_wrist_pitch','gyroscope_wam_wrist_pitch','global_pos_wam_wrist_pitch','global_quat_wam_wrist_pitch','joint_pos_wam_wrist_pitch','joint_vel_wam_wrist_pitch','joint_effort_wam_wrist_pitch',
                             'accelerometer_wam_wrist_palm','velocimeter_wam_wrist_palm','gyroscope_wam_wrist_palm','global_pos_wam_wrist_palm','global_quat_wam_wrist_palm','joint_pos_wam_wrist_palm','joint_vel_wam_wrist_palm','joint_effort_wam_wrist_palm',
-                            'force_sensor','torque_sensor']
+                            'force_sensor','torque_sensor',
+                            'accelerometer_bhand_palm','velocimeter_bhand_palm','gyroscope_bhand_palm','global_pos_bhand_palm','global_quat_bhand_palm',
+                            'accelerometer_bhand_finger_1_prox','velocimeter_bhand_finger_1_prox','gyroscope_bhand_finger_1_prox','global_pos_bhand_finger_1_prox','global_quat_bhand_finger_1_prox','joint_pos_bhand_finger_1_prox','joint_vel_bhand_finger_1_prox','joint_effort_bhand_finger_1_prox',
+                            'accelerometer_bhand_finger_1_med','velocimeter_bhand_finger_1_med','gyroscope_bhand_finger_1_med','global_pos_bhand_finger_1_med','global_quat_bhand_finger_1_med','joint_pos_bhand_finger_1_med','joint_vel_bhand_finger_1_med','joint_effort_bhand_finger_1_med',
+                            'accelerometer_bhand_finger_1_dist','velocimeter_bhand_finger_1_dist','gyroscope_bhand_finger_1_dist','global_pos_bhand_finger_1_dist','global_quat_bhand_finger_1_dist','joint_pos_bhand_finger_1_dist','joint_vel_bhand_finger_1_dist','joint_effort_bhand_finger_1_dist',
+                            'accelerometer_bhand_finger_2_prox','velocimeter_bhand_finger_2_prox','gyroscope_bhand_finger_2_prox','global_pos_bhand_finger_2_prox','global_quat_bhand_finger_2_prox','joint_pos_bhand_finger_2_prox','joint_vel_bhand_finger_2_prox','joint_effort_bhand_finger_2_prox',
+                            'accelerometer_bhand_finger_2_med','velocimeter_bhand_finger_2_med','gyroscope_bhand_finger_2_med','global_pos_bhand_finger_2_med','global_quat_bhand_finger_2_med','joint_pos_bhand_finger_2_med','joint_vel_bhand_finger_2_med','joint_effort_bhand_finger_2_med',
+                            'accelerometer_bhand_finger_2_dist','velocimeter_bhand_finger_2_dist','gyroscope_bhand_finger_2_dist','global_pos_bhand_finger_2_dist','global_quat_bhand_finger_2_dist','joint_pos_bhand_finger_2_dist','joint_vel_bhand_finger_2_dist','joint_effort_bhand_finger_2_dist',
+                            'accelerometer_bhand_finger_3_med','velocimeter_bhand_finger_3_med','gyroscope_bhand_finger_3_med','global_pos_bhand_finger_3_med','global_quat_bhand_finger_3_med','joint_pos_bhand_finger_3_med','joint_vel_bhand_finger_3_med','joint_effort_bhand_finger_3_med',
+                            'accelerometer_bhand_finger_3_dist','velocimeter_bhand_finger_3_dist','gyroscope_bhand_finger_3_dist','global_pos_bhand_finger_3_dist','global_quat_bhand_finger_3_dist','joint_pos_bhand_finger_3_dist','joint_vel_bhand_finger_3_dist','joint_effort_bhand_finger_3_dist']
 
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
@@ -644,6 +653,369 @@ class StatePublisherMujoco(object):
         force_torque_state_stamped.wrench.torque.x = sensor_data[67][0]
         force_torque_state_stamped.wrench.torque.y = sensor_data[67][1]
         force_torque_state_stamped.wrench.torque.z = sensor_data[67][2]
+
+        # BHand Palm Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[68][0]
+        temp_accel.linear.y = sensor_data[68][1]
+        temp_accel.linear.z = sensor_data[68][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/bhand_palm_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[69][0]
+        temp_twist.linear.y = sensor_data[69][1]
+        temp_twist.linear.z = sensor_data[69][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[70][0]
+        temp_twist.angular.y = sensor_data[70][1]
+        temp_twist.angular.z = sensor_data[70][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[71][0]
+        temp_pose.position.y = sensor_data[71][1]
+        temp_pose.position.z = sensor_data[71][2]
+        temp_pose.orientation.w = sensor_data[72][0]
+        temp_pose.orientation.x = sensor_data[72][1]
+        temp_pose.orientation.y = sensor_data[72][2]
+        temp_pose.orientation.z = sensor_data[72][3]
+        link_state_stamped.pose.append(temp_pose)
+
+        # BHand Finger 1 Prox Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[73][0]
+        temp_accel.linear.y = sensor_data[73][1]
+        temp_accel.linear.z = sensor_data[73][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_1/prox_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[74][0]
+        temp_twist.linear.y = sensor_data[74][1]
+        temp_twist.linear.z = sensor_data[74][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[75][0]
+        temp_twist.angular.y = sensor_data[75][1]
+        temp_twist.angular.z = sensor_data[75][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[76][0]
+        temp_pose.position.y = sensor_data[76][1]
+        temp_pose.position.z = sensor_data[76][2]
+        temp_pose.orientation.w = sensor_data[77][0]
+        temp_pose.orientation.x = sensor_data[77][1]
+        temp_pose.orientation.y = sensor_data[77][2]
+        temp_pose.orientation.z = sensor_data[77][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f1/prox")
+        joint_state_stamped.position.append(sensor_data[78][0])
+        joint_state_stamped.velocity.append(sensor_data[79][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f1/prox").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[80][0])
+
+        # BHand Finger 1 Med Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[81][0]
+        temp_accel.linear.y = sensor_data[81][1]
+        temp_accel.linear.z = sensor_data[81][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_1/med_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[82][0]
+        temp_twist.linear.y = sensor_data[82][1]
+        temp_twist.linear.z = sensor_data[82][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[83][0]
+        temp_twist.angular.y = sensor_data[83][1]
+        temp_twist.angular.z = sensor_data[83][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[84][0]
+        temp_pose.position.y = sensor_data[84][1]
+        temp_pose.position.z = sensor_data[84][2]
+        temp_pose.orientation.w = sensor_data[85][0]
+        temp_pose.orientation.x = sensor_data[85][1]
+        temp_pose.orientation.y = sensor_data[85][2]
+        temp_pose.orientation.z = sensor_data[85][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f1/med")
+        joint_state_stamped.position.append(sensor_data[86][0])
+        joint_state_stamped.velocity.append(sensor_data[87][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f1/med").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[88][0])
+
+        # BHand Finger 1 Dist Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[89][0]
+        temp_accel.linear.y = sensor_data[89][1]
+        temp_accel.linear.z = sensor_data[89][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_1/dist_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[90][0]
+        temp_twist.linear.y = sensor_data[90][1]
+        temp_twist.linear.z = sensor_data[90][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[91][0]
+        temp_twist.angular.y = sensor_data[91][1]
+        temp_twist.angular.z = sensor_data[91][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[92][0]
+        temp_pose.position.y = sensor_data[92][1]
+        temp_pose.position.z = sensor_data[92][2]
+        temp_pose.orientation.w = sensor_data[93][0]
+        temp_pose.orientation.x = sensor_data[93][1]
+        temp_pose.orientation.y = sensor_data[93][2]
+        temp_pose.orientation.z = sensor_data[93][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f1/dist")
+        joint_state_stamped.position.append(sensor_data[94][0])
+        joint_state_stamped.velocity.append(sensor_data[95][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f1/dist").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[96][0])
+
+        # BHand Finger 2 Prox Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[97][0]
+        temp_accel.linear.y = sensor_data[97][1]
+        temp_accel.linear.z = sensor_data[97][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_2/prox_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[98][0]
+        temp_twist.linear.y = sensor_data[98][1]
+        temp_twist.linear.z = sensor_data[98][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[99][0]
+        temp_twist.angular.y = sensor_data[99][1]
+        temp_twist.angular.z = sensor_data[99][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[100][0]
+        temp_pose.position.y = sensor_data[100][1]
+        temp_pose.position.z = sensor_data[100][2]
+        temp_pose.orientation.w = sensor_data[101][0]
+        temp_pose.orientation.x = sensor_data[101][1]
+        temp_pose.orientation.y = sensor_data[101][2]
+        temp_pose.orientation.z = sensor_data[101][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f2/prox")
+        joint_state_stamped.position.append(sensor_data[102][0])
+        joint_state_stamped.velocity.append(sensor_data[103][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f2/prox").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[104][0])
+
+        # BHand Finger 2 Med Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[105][0]
+        temp_accel.linear.y = sensor_data[105][1]
+        temp_accel.linear.z = sensor_data[105][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_2/med_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[106][0]
+        temp_twist.linear.y = sensor_data[106][1]
+        temp_twist.linear.z = sensor_data[106][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[107][0]
+        temp_twist.angular.y = sensor_data[107][1]
+        temp_twist.angular.z = sensor_data[107][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[108][0]
+        temp_pose.position.y = sensor_data[108][1]
+        temp_pose.position.z = sensor_data[108][2]
+        temp_pose.orientation.w = sensor_data[109][0]
+        temp_pose.orientation.x = sensor_data[109][1]
+        temp_pose.orientation.y = sensor_data[109][2]
+        temp_pose.orientation.z = sensor_data[109][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f2/med")
+        joint_state_stamped.position.append(sensor_data[110][0])
+        joint_state_stamped.velocity.append(sensor_data[111][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f2/med").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[112][0])
+
+        # BHand Finger 2 Dist Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[113][0]
+        temp_accel.linear.y = sensor_data[113][1]
+        temp_accel.linear.z = sensor_data[113][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_2/dist_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[114][0]
+        temp_twist.linear.y = sensor_data[114][1]
+        temp_twist.linear.z = sensor_data[114][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[115][0]
+        temp_twist.angular.y = sensor_data[115][1]
+        temp_twist.angular.z = sensor_data[115][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[116][0]
+        temp_pose.position.y = sensor_data[116][1]
+        temp_pose.position.z = sensor_data[116][2]
+        temp_pose.orientation.w = sensor_data[117][0]
+        temp_pose.orientation.x = sensor_data[117][1]
+        temp_pose.orientation.y = sensor_data[117][2]
+        temp_pose.orientation.z = sensor_data[117][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f2/dist")
+        joint_state_stamped.position.append(sensor_data[118][0])
+        joint_state_stamped.velocity.append(sensor_data[119][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f2/dist").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[120][0])
+
+        # BHand Finger 3 Med Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[121][0]
+        temp_accel.linear.y = sensor_data[121][1]
+        temp_accel.linear.z = sensor_data[121][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_3/med_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[122][0]
+        temp_twist.linear.y = sensor_data[122][1]
+        temp_twist.linear.z = sensor_data[122][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[123][0]
+        temp_twist.angular.y = sensor_data[123][1]
+        temp_twist.angular.z = sensor_data[123][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[124][0]
+        temp_pose.position.y = sensor_data[124][1]
+        temp_pose.position.z = sensor_data[124][2]
+        temp_pose.orientation.w = sensor_data[125][0]
+        temp_pose.orientation.x = sensor_data[125][1]
+        temp_pose.orientation.y = sensor_data[125][2]
+        temp_pose.orientation.z = sensor_data[125][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f3/med")
+        joint_state_stamped.position.append(sensor_data[126][0])
+        joint_state_stamped.velocity.append(sensor_data[127][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f3/med").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[128][0])
+
+        # BHand Finger 3 Dist Link
+        # Linear acceleration
+        temp_accel = Accel()
+        temp_accel.linear.x = sensor_data[129][0]
+        temp_accel.linear.y = sensor_data[129][1]
+        temp_accel.linear.z = sensor_data[129][2]
+        # Angular acceleration
+        temp_accel.angular.x = 0
+        temp_accel.angular.y = 0
+        temp_accel.angular.z = 0
+        link_state_stamped.accel.append(temp_accel)
+        # Link name
+        link_state_stamped.name.append("wam/bhand/finger_3/dist_link")
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[130][0]
+        temp_twist.linear.y = sensor_data[130][1]
+        temp_twist.linear.z = sensor_data[130][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[131][0]
+        temp_twist.angular.y = sensor_data[131][1]
+        temp_twist.angular.z = sensor_data[131][2]
+        link_state_stamped.twist.append(temp_twist)
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[132][0]
+        temp_pose.position.y = sensor_data[132][1]
+        temp_pose.position.z = sensor_data[132][2]
+        temp_pose.orientation.w = sensor_data[133][0]
+        temp_pose.orientation.x = sensor_data[133][1]
+        temp_pose.orientation.y = sensor_data[133][2]
+        temp_pose.orientation.z = sensor_data[133][3]
+        link_state_stamped.pose.append(temp_pose)
+        # Joint state
+        joint_state_stamped.name.append("bhand/f3/dist")
+        joint_state_stamped.position.append(sensor_data[134][0])
+        joint_state_stamped.velocity.append(sensor_data[135][0])
+        joint_state_stamped.acceleration.append(self.data.joint("bhand/f3/dist").qacc[0])
+        joint_state_stamped.effort.append(sensor_data[136][0])
 
         # Publish Link-states
         self.pub_link_state_sensor.publish(link_state_stamped)
