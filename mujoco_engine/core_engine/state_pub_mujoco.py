@@ -111,7 +111,8 @@ class StatePublisherMujoco(object):
                             'accelerometer_bhand_finger_2_med','velocimeter_bhand_finger_2_med','gyroscope_bhand_finger_2_med','global_pos_bhand_finger_2_med','global_quat_bhand_finger_2_med','joint_pos_bhand_finger_2_med','joint_vel_bhand_finger_2_med','joint_effort_bhand_finger_2_med',
                             'accelerometer_bhand_finger_2_dist','velocimeter_bhand_finger_2_dist','gyroscope_bhand_finger_2_dist','global_pos_bhand_finger_2_dist','global_quat_bhand_finger_2_dist','joint_pos_bhand_finger_2_dist','joint_vel_bhand_finger_2_dist','joint_effort_bhand_finger_2_dist',
                             'accelerometer_bhand_finger_3_med','velocimeter_bhand_finger_3_med','gyroscope_bhand_finger_3_med','global_pos_bhand_finger_3_med','global_quat_bhand_finger_3_med','joint_pos_bhand_finger_3_med','joint_vel_bhand_finger_3_med','joint_effort_bhand_finger_3_med',
-                            'accelerometer_bhand_finger_3_dist','velocimeter_bhand_finger_3_dist','gyroscope_bhand_finger_3_dist','global_pos_bhand_finger_3_dist','global_quat_bhand_finger_3_dist','joint_pos_bhand_finger_3_dist','joint_vel_bhand_finger_3_dist','joint_effort_bhand_finger_3_dist']
+                            'accelerometer_bhand_finger_3_dist','velocimeter_bhand_finger_3_dist','gyroscope_bhand_finger_3_dist','global_pos_bhand_finger_3_dist','global_quat_bhand_finger_3_dist','joint_pos_bhand_finger_3_dist','joint_vel_bhand_finger_3_dist','joint_effort_bhand_finger_3_dist',
+                            'accelerometer_1_cart','accelerometer_2_cart','velocimeter_cart','gyroscope_cart','global_pos_cart','global_quat_cart']
 
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
@@ -1066,6 +1067,49 @@ class StatePublisherMujoco(object):
         joint_state_stamped.velocity.append(sensor_data[135][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f3/dist").qacc[0])
         joint_state_stamped.effort.append(sensor_data[136][0])
+
+        # Cart
+        # Linear acceleration
+        temp_accel_1 = Accel()
+        temp_accel_1.linear.x = sensor_data[137][0]
+        temp_accel_1.linear.y = sensor_data[137][1]
+        temp_accel_1.linear.z = sensor_data[137][2]
+        # Angular acceleration
+        temp_accel_1.angular.x = 0
+        temp_accel_1.angular.y = 0
+        temp_accel_1.angular.z = (sensor_data[138][1]-sensor_data[137][1])/0.1
+        force_torque_comp_stamped.cart_accel_1 = temp_accel_1
+        # Linear acceleration
+        temp_accel_2 = Accel()
+        temp_accel_2.linear.x = sensor_data[138][0]
+        temp_accel_2.linear.y = sensor_data[138][1]
+        temp_accel_2.linear.z = sensor_data[138][2]
+        # Angular acceleration
+        temp_accel_2.angular.x = 0
+        temp_accel_2.angular.y = 0
+        temp_accel_2.angular.z = (sensor_data[138][1]-sensor_data[137][1])/0.1
+        force_torque_comp_stamped.cart_accel_2 = temp_accel_2
+        # Twist
+        temp_twist = Twist()
+        # Linear component
+        temp_twist.linear.x = sensor_data[139][0]
+        temp_twist.linear.y = sensor_data[139][1]
+        temp_twist.linear.z = sensor_data[139][2]
+        # Angular component
+        temp_twist.angular.x = sensor_data[140][0]
+        temp_twist.angular.y = sensor_data[140][1]
+        temp_twist.angular.z = sensor_data[140][2]
+        force_torque_comp_stamped.cart_twist = temp_twist
+        # Link pose
+        temp_pose = Pose()
+        temp_pose.position.x = sensor_data[141][0]
+        temp_pose.position.y = sensor_data[141][1]
+        temp_pose.position.z = sensor_data[141][2]
+        temp_pose.orientation.w = sensor_data[142][0]
+        temp_pose.orientation.x = sensor_data[142][1]
+        temp_pose.orientation.y = sensor_data[142][2]
+        temp_pose.orientation.z = sensor_data[142][3]
+        force_torque_comp_stamped.cart_pose = temp_pose
 
         # Publish Link-states
         self.pub_link_state_sensor.publish(link_state_stamped)
