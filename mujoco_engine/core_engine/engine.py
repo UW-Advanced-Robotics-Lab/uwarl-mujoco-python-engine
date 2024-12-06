@@ -145,13 +145,6 @@ class Mujoco_Engine:
         self.forklift_currenty_vel = 0.0
         self.forklift_currenttheta_vel = 0.0
 
-        # Initialized current Summit-base yaw angular-displacement
-        self.summit_current_theta = 0.0
-        # Initialized current Fetch-base yaw angular-displacement
-        self.fetch_current_theta = 0.0
-        # Initialized current Forklift-base yaw angular-displacement
-        self.forklift_current_theta = 0.0
-
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
             title="Mujoco-Engine", 
@@ -206,69 +199,79 @@ class Mujoco_Engine:
         # Get current velocity of base for PID control
         # For Summit
         if (self._robot_list[0]):
-            self.summit_currentx_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
-            self.summit_currenty_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
-            self.summit_currenttheta_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
-            try:
-                quaternion_vec = R.from_quat(np.array([self.mj_data.body(self.summit_base_name+"/base_link").xquat[1],
-                                                    self.mj_data.body(self.summit_base_name+"/base_link").xquat[2],
-                                                    self.mj_data.body(self.summit_base_name+"/base_link").xquat[3],
-                                                    self.mj_data.body(self.summit_base_name+"/base_link").xquat[0]]))
-                rot_mat = quaternion_vec.as_matrix()
-                self.summit_current_theta = np.arctan2(rot_mat[1,0],rot_mat[0,0])
-            except:
-                # The initial query gives an incorrect quaternion (the norm of the quaternion-output is not ==1), so we try to catch it and throw out a deafult 0-value.
-                self.summit_current_theta = 0
+            # self.summit_currentx_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
+            # self.summit_currenty_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
+            # self.summit_currenttheta_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
+            # https://www.roboti.us/forum/index.php?threads/reading-sensor-values.3972/#post-5368
+            mb_velocimeter_id = self.mj_model.name2id("velocimeter_mb",'sensor')
+            mb_gyroscope_id = self.mj_model.name2id("gyroscope_mb",'sensor')
+            # Sensor index
+            mb_velocimeter_sensor_index = self.mj_model.sensor_adr[mb_velocimeter_id]
+            mb_gyroscope_sensor_index = self.mj_model.sensor_adr[mb_gyroscope_id]
+            # Sensor dimension
+            mb_velocimeter_sensor_dim = self.mj_model.sensor_dim[mb_velocimeter_id]
+            mb_gyroscope_sensor_dim = self.mj_model.sensor_dim[mb_gyroscope_id]
+            # Append sensor data
+            mb_velocimeter_sensor_data = self.mj_data.sensordata[mb_velocimeter_sensor_index:(mb_velocimeter_sensor_index+mb_velocimeter_sensor_dim)]
+            mb_gyroscope_sensor_data = self.mj_data.sensordata[mb_gyroscope_sensor_index:(mb_gyroscope_sensor_index+mb_gyroscope_sensor_dim)]
+            self.summit_currentx_vel = mb_velocimeter_sensor_data[0]
+            self.summit_currenty_vel = mb_velocimeter_sensor_data[1]
+            self.summit_currenttheta_vel = mb_gyroscope_sensor_data[2]
+
         
         # For Fetch
         if (self._robot_list[1]):
-            self.fetch_currentx_vel = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
-            self.fetch_currenty_vel = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
-            self.fetch_currenttheta_vel = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
-            try:
-                quaternion_vec = R.from_quat(np.array([self.mj_data.body(self.fetch_base_name+"/base_link").xquat[1],
-                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[2],
-                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[3],
-                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[0]]))
-                rot_mat = quaternion_vec.as_matrix()
-                self.fetch_current_theta = np.arctan2(rot_mat[1,0],rot_mat[0,0])
-            except:
-                # The initial query gives an incorrect quaternion (the norm of the quaternion-output is not ==1), so we try to catch it and throw out a deafult 0-value.
-                self.fetch_current_theta = 0
+            # Place sensors on the Fetch. DO NOT USE cvel. (https://github.com/google-deepmind/mujoco/issues/2210#issuecomment-2476113820)
+            fetch_velocimeter_id = self.mj_model.name2id("velocimeter_fetch",'sensor')
+            fetch_gyroscope_id = self.mj_model.name2id("gyroscope_fetch",'sensor')
+            # Sensor index
+            fetch_velocimeter_sensor_index = self.mj_model.sensor_adr[fetch_velocimeter_id]
+            fetch_gyroscope_sensor_index = self.mj_model.sensor_adr[fetch_gyroscope_id]
+            # Sensor dimension
+            fetch_velocimeter_sensor_dim = self.mj_model.sensor_dim[fetch_velocimeter_id]
+            fetch_gyroscope_sensor_dim = self.mj_model.sensor_dim[fetch_gyroscope_id]
+            # Append sensor data
+            fetch_velocimeter_sensor_data = self.mj_data.sensordata[fetch_velocimeter_sensor_index:(fetch_velocimeter_sensor_index+fetch_velocimeter_sensor_dim)]
+            fetch_gyroscope_sensor_data = self.mj_data.sensordata[fetch_gyroscope_sensor_index:(fetch_gyroscope_sensor_index+fetch_gyroscope_sensor_dim)]
+            self.fetch_currentx_vel = fetch_velocimeter_sensor_data[0]
+            self.fetch_currenty_vel = fetch_velocimeter_sensor_data[1]
+            self.fetch_currenttheta_vel = fetch_gyroscope_sensor_data[2]
         
         # For Forklift
         if (self._robot_list[2]):
-            self.forklift_currentx_vel = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
-            self.forklift_currenty_vel = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
-            self.forklift_currenttheta_vel = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
-            try:
-                quaternion_vec = R.from_quat(np.array([self.mj_data.body(self.fetch_base_name+"/base_link").xquat[1],
-                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[2],
-                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[3],
-                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[0]]))
-                rot_mat = quaternion_vec.as_matrix()
-                self.forklift_current_theta = np.arctan2(rot_mat[1,0],rot_mat[0,0])
-            except:
-                # The initial query gives an incorrect quaternion (the norm of the quaternion-output is not ==1), so we try to catch it and throw out a deafult 0-value.
-                self.forklift_current_theta = 0
+            # Place sensors on the Fetch. DO NOT USE cvel. (https://github.com/google-deepmind/mujoco/issues/2210#issuecomment-2476113820)
+            forklift_velocimeter_id = self.mj_model.name2id("velocimeter_forklift",'sensor')
+            forklift_gyroscope_id = self.mj_model.name2id("gyroscope_forklift",'sensor')
+            # Sensor index
+            forklift_velocimeter_sensor_index = self.mj_model.sensor_adr[forklift_velocimeter_id]
+            forklift_gyroscope_sensor_index = self.mj_model.sensor_adr[forklift_gyroscope_id]
+            # Sensor dimension
+            forklift_velocimeter_sensor_dim = self.mj_model.sensor_dim[forklift_velocimeter_id]
+            forklift_gyroscope_sensor_dim = self.mj_model.sensor_dim[forklift_gyroscope_id]
+            # Append sensor data
+            forklift_velocimeter_sensor_data = self.mj_data.sensordata[forklift_velocimeter_sensor_index:(forklift_velocimeter_sensor_index+forklift_velocimeter_sensor_dim)]
+            forklift_gyroscope_sensor_data = self.mj_data.sensordata[forklift_gyroscope_sensor_index:(forklift_gyroscope_sensor_index+forklift_gyroscope_sensor_dim)]
+            self.forklift_currentx_vel = forklift_velocimeter_sensor_data[0]
+            self.forklift_currenty_vel = forklift_velocimeter_sensor_data[1]
+            self.forklift_currenttheta_vel = forklift_gyroscope_sensor_data[2]
 
         # Set control commands by simple PID control defined in "control_commands.py"
         # For Summit
         if (self._robot_list[0]):
-            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx_vel,self.summit_base_name,self.summit_current_theta)   
-            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty_vel,self.summit_base_name,self.summit_current_theta)
+            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx_vel,self.summit_base_name)   
+            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty_vel,self.summit_base_name)
             self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta_vel,self.summit_base_name)
         
         # For Fetch
         if (self._robot_list[1]):
-            self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx_vel,self.fetch_base_name,self.fetch_current_theta)   
-            self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty_vel,self.fetch_base_name,self.fetch_current_theta)
+            self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx_vel,self.fetch_base_name)   
+            self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty_vel,self.fetch_base_name)
             self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta_vel,self.fetch_base_name)
         
         # For Forklift
         if (self._robot_list[2]):
-            self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx_vel,self.forklift_base_name,self.forklift_current_theta)   
-            self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty_vel,self.forklift_base_name,self.forklift_current_theta)
+            self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx_vel,self.forklift_base_name)   
+            self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty_vel,self.forklift_base_name)
             self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta_vel,self.forklift_base_name)
         
         # stepping if needed
