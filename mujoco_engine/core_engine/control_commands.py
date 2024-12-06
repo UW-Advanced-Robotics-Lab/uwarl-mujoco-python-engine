@@ -41,10 +41,10 @@ class ControlCommand(object):
         self.vel_base = [msg.linear.x, msg.linear.y, msg.angular.z]
 
     # PID loop to control x velocity of non-holonomic-robot in map frame
-    def velx_PID(self, Kp, Ki, Kd, CP, base_name, yaw_theta):
+    def velx_PID(self, Kp, Ki, Kd, CP, base_name):
 
         # Convert reference velocities into mapframe
-        SP = self.vel_base[0]*cos(yaw_theta)+self.vel_base[1]*-sin(yaw_theta)
+        SP = self.vel_base[0]
 
         t = rospy.Time().now().to_time()
         ex = float(SP - CP)
@@ -59,18 +59,15 @@ class ControlCommand(object):
 
         control = P+self.Ix+D
 
-        # print("Set-point - Control-point X-axis: "+str(ex))
-        # print("Control-command X-axis: "+str(control))
         # Set control commands in mj_data
         self.mj_data_control.actuator(base_name+'/pose/x').ctrl = control
 
 
     # PID loop to control y velocity of holonomic-robot in map frame
-    def vely_PID(self, Kp, Ki, Kd, CP, base_name, yaw_theta):
+    def vely_PID(self, Kp, Ki, Kd, CP, base_name):
 
         # Convert reference velocities into mapframe
-        SP = self.vel_base[0]*sin(yaw_theta)+self.vel_base[1]*cos(yaw_theta)
-        # print("Yaw-orientation: "+str(yaw_theta))
+        SP = self.vel_base[1]
         t = rospy.Time().now().to_time()
         ey = float(SP - CP)
 
@@ -84,10 +81,6 @@ class ControlCommand(object):
 
         control = P+self.Iy+D
 
-        # print("Set-point Y-axis: "+str(SP))
-        # print("Control-point Y-axis: "+str(CP))
-        # print("Set-point - Control-point Y-axis: "+str(ey))
-        # print("Control-command Y-axis: "+str(control))
         # Set control commands in mj_data
         self.mj_data_control.actuator(base_name+'/pose/y').ctrl = control
 
