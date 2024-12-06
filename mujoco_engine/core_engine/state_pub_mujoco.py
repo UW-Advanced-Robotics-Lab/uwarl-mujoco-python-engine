@@ -161,65 +161,65 @@ class StatePublisherMujoco(object):
             orient.w = self.data.body(name).xquat[0]
 
             # Set original orientation of spawned bodies to 0 for wagon and base
-            if name == 'smt/base_link':
-                id_new = self.model.name2id('waterloo_steel','body')
-                original_orient.x = self.model.body_quat[id_new][1]
-                original_orient.y = self.model.body_quat[id_new][2]
-                original_orient.z = self.model.body_quat[id_new][3]
-                original_orient.w = self.model.body_quat[id_new][0]
+            # if name == 'smt/base_link':
+            #     id_new = self.model.name2id('waterloo_steel','body')
+            #     original_orient.x = self.model.body_quat[id_new][1]
+            #     original_orient.y = self.model.body_quat[id_new][2]
+            #     original_orient.z = self.model.body_quat[id_new][3]
+            #     original_orient.w = self.model.body_quat[id_new][0]
 
-                # Rotate summit base_link back to 0.0 degrees
-                orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
-                orie_quat = [orient.x,orient.y,orient.z,orient.w]
-                inv_quat = quaternion_inverse(orig_quat)
-                new_quat = quaternion_multiply(orie_quat,inv_quat)
-                new_orient = Quaternion()
-                new_orient.x = new_quat[0]
-                new_orient.y = new_quat[1]
-                new_orient.z = new_quat[2]
-                new_orient.w = new_quat[3]
-                pos.orientation = new_orient
+            #     # Rotate summit base_link back to 0.0 degrees
+            #     orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
+            #     orie_quat = [orient.x,orient.y,orient.z,orient.w]
+            #     inv_quat = quaternion_inverse(orig_quat)
+            #     new_quat = quaternion_multiply(orie_quat,inv_quat)
+            #     new_orient = Quaternion()
+            #     new_orient.x = new_quat[0]
+            #     new_orient.y = new_quat[1]
+            #     new_orient.z = new_quat[2]
+            #     new_orient.w = new_quat[3]
+            #     pos.orientation = new_orient
 
-            elif name == 'utility/wagon':
-                id_new = self.model.name2id('wagon','body')
-                original_orient.x = self.model.body_quat[id_new][1]
-                original_orient.y = self.model.body_quat[id_new][2]
-                original_orient.z = self.model.body_quat[id_new][3]
-                original_orient.w = self.model.body_quat[id_new][0]
+            # elif name == 'utility/wagon':
+            #     id_new = self.model.name2id('wagon','body')
+            #     original_orient.x = self.model.body_quat[id_new][1]
+            #     original_orient.y = self.model.body_quat[id_new][2]
+            #     original_orient.z = self.model.body_quat[id_new][3]
+            #     original_orient.w = self.model.body_quat[id_new][0]
 
-                # Rotate wagon utility/wagon back to 0.0 degrees
-                orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
-                orie_quat = [orient.x,orient.y,orient.z,orient.w]
-                inv_quat = quaternion_inverse(orig_quat)
-                new_quat = quaternion_multiply(orie_quat,inv_quat)
-                new_orient = Quaternion()
-                new_orient.x = new_quat[0]
-                new_orient.y = new_quat[1]
-                new_orient.z = new_quat[2]
-                new_orient.w = new_quat[3]
-                pos.orientation = new_orient
+            #     # Rotate wagon utility/wagon back to 0.0 degrees
+            #     orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
+            #     orie_quat = [orient.x,orient.y,orient.z,orient.w]
+            #     inv_quat = quaternion_inverse(orig_quat)
+            #     new_quat = quaternion_multiply(orie_quat,inv_quat)
+            #     new_orient = Quaternion()
+            #     new_orient.x = new_quat[0]
+            #     new_orient.y = new_quat[1]
+            #     new_orient.z = new_quat[2]
+            #     new_orient.w = new_quat[3]
+            #     pos.orientation = new_orient
             
-            elif name == 'fork_lift/base_link':
-                id_new = self.model.name2id('fork_lift_1','body')
-                original_orient.x = self.model.body_quat[id_new][1]
-                original_orient.y = self.model.body_quat[id_new][2]
-                original_orient.z = self.model.body_quat[id_new][3]
-                original_orient.w = self.model.body_quat[id_new][0]
+            # elif name == 'fork_lift/base_link':
+            #     id_new = self.model.name2id('fork_lift_1','body')
+            #     original_orient.x = self.model.body_quat[id_new][1]
+            #     original_orient.y = self.model.body_quat[id_new][2]
+            #     original_orient.z = self.model.body_quat[id_new][3]
+            #     original_orient.w = self.model.body_quat[id_new][0]
 
-                # Rotate wagon utility/wagon back to 0.0 degrees
-                orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
-                orie_quat = [orient.x,orient.y,orient.z,orient.w]
-                inv_quat = quaternion_inverse(orig_quat)
-                new_quat = quaternion_multiply(orie_quat,inv_quat)
-                new_orient = Quaternion()
-                new_orient.x = new_quat[0]
-                new_orient.y = new_quat[1]
-                new_orient.z = new_quat[2]
-                new_orient.w = new_quat[3]
-                pos.orientation = new_orient
+            #     # Rotate wagon utility/wagon back to 0.0 degrees
+            #     orig_quat = [original_orient.x,original_orient.y,original_orient.z,original_orient.w]
+            #     orie_quat = [orient.x,orient.y,orient.z,orient.w]
+            #     inv_quat = quaternion_inverse(orig_quat)
+            #     new_quat = quaternion_multiply(orie_quat,inv_quat)
+            #     new_orient = Quaternion()
+            #     new_orient.x = new_quat[0]
+            #     new_orient.y = new_quat[1]
+            #     new_orient.z = new_quat[2]
+            #     new_orient.w = new_quat[3]
+            #     pos.orientation = new_orient
    
-            else:
-                pos.orientation = orient
+            # else:
+            pos.orientation = orient
 
             # Velocity based on COM
             vel.angular.x = self.data.body(name).cvel[0]
