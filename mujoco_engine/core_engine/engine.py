@@ -38,6 +38,8 @@ from mujoco_engine.core_engine.state_pub_mujoco import StatePublisherMujoco
 from mujoco_engine.core_engine.control_commands import ControlCommand
 from mujoco_engine.core_engine.effort_control_commands import EffortControlCommand
 
+from scipy.spatial.transform import Rotation as R
+
 from std_msgs.msg import Float64
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -130,18 +132,25 @@ class Mujoco_Engine:
             self.forklift_cmd_vel_topic_name = "fork_lift/forklift_base_control/cmd_vel"
             self.forklift_control_commands = ControlCommand(self.mj_data,self.forklift_cmd_vel_topic_name)
 
-        # Initialized current Summit-base location
-        self.summit_currentx = 0.0
-        self.summit_currenty = 0.0
-        self.summit_currenttheta = 0.0
-        # Initialized current Fetch-base location
-        self.fetch_currentx = 0.0
-        self.fetch_currenty = 0.0
-        self.fetch_currenttheta = 0.0
-        # Initialized current Forklift-base location
-        self.forklift_currentx = 0.0
-        self.forklift_currenty = 0.0
-        self.forklift_currenttheta = 0.0
+        # Initialized current Summit-base twist
+        self.summit_currentx_vel = 0.0
+        self.summit_currenty_vel = 0.0
+        self.summit_currenttheta_vel = 0.0
+        # Initialized current Fetch-base twist
+        self.fetch_currentx_vel = 0.0
+        self.fetch_currenty_vel = 0.0
+        self.fetch_currenttheta_vel = 0.0
+        # Initialized current Forklift-base twist
+        self.forklift_currentx_vel = 0.0
+        self.forklift_currenty_vel = 0.0
+        self.forklift_currenttheta_vel = 0.0
+
+        # Initialized current Summit-base yaw angular-displacement
+        self.summit_current_theta = 0.0
+        # Initialized current Fetch-base yaw angular-displacement
+        self.fetch_current_theta = 0.0
+        # Initialized current Forklift-base yaw angular-displacement
+        self.forklift_current_theta = 0.0
 
         ## MJ Viewer:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
@@ -197,40 +206,70 @@ class Mujoco_Engine:
         # Get current velocity of base for PID control
         # For Summit
         if (self._robot_list[0]):
-            self.summit_currentx = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
-            self.summit_currenty = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
-            self.summit_currenttheta = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
+            self.summit_currentx_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[3]
+            self.summit_currenty_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[4]
+            self.summit_currenttheta_vel = self.mj_data.body(self.summit_base_name+"/base_link").cvel[2]
+            try:
+                quaternion_vec = R.from_quat(np.array([self.mj_data.body(self.summit_base_name+"/base_link").xquat[1],
+                                                    self.mj_data.body(self.summit_base_name+"/base_link").xquat[2],
+                                                    self.mj_data.body(self.summit_base_name+"/base_link").xquat[3],
+                                                    self.mj_data.body(self.summit_base_name+"/base_link").xquat[0]]))
+                rot_mat = quaternion_vec.as_matrix()
+                self.summit_current_theta = np.arctan2(rot_mat[1,0],rot_mat[0,0])
+            except:
+                # The initial query gives an incorrect quaternion (the norm of the quaternion-output is not ==1), so we try to catch it and throw out a deafult 0-value.
+                self.summit_current_theta = 0
         
         # For Fetch
         if (self._robot_list[1]):
-            self.fetch_currentx = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
-            self.fetch_currenty = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
-            self.fetch_currenttheta = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
+            self.fetch_currentx_vel = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[3]
+            self.fetch_currenty_vel = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[4]
+            self.fetch_currenttheta_vel = self.mj_data.body(self.fetch_base_name+"/base_link").cvel[2]
+            try:
+                quaternion_vec = R.from_quat(np.array([self.mj_data.body(self.fetch_base_name+"/base_link").xquat[1],
+                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[2],
+                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[3],
+                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[0]]))
+                rot_mat = quaternion_vec.as_matrix()
+                self.fetch_current_theta = np.arctan2(rot_mat[1,0],rot_mat[0,0])
+            except:
+                # The initial query gives an incorrect quaternion (the norm of the quaternion-output is not ==1), so we try to catch it and throw out a deafult 0-value.
+                self.fetch_current_theta = 0
         
         # For Forklift
         if (self._robot_list[2]):
-            self.forklift_currentx = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
-            self.forklift_currenty = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
-            self.forklift_currenttheta = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
+            self.forklift_currentx_vel = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[3]
+            self.forklift_currenty_vel = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[4]
+            self.forklift_currenttheta_vel = self.mj_data.body(self.forklift_base_name+"/base_link").cvel[2]
+            try:
+                quaternion_vec = R.from_quat(np.array([self.mj_data.body(self.fetch_base_name+"/base_link").xquat[1],
+                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[2],
+                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[3],
+                                                    self.mj_data.body(self.fetch_base_name+"/base_link").xquat[0]]))
+                rot_mat = quaternion_vec.as_matrix()
+                self.forklift_current_theta = np.arctan2(rot_mat[1,0],rot_mat[0,0])
+            except:
+                # The initial query gives an incorrect quaternion (the norm of the quaternion-output is not ==1), so we try to catch it and throw out a deafult 0-value.
+                self.forklift_current_theta = 0
 
         # Set control commands by simple PID control defined in "control_commands.py"
         # For Summit
         if (self._robot_list[0]):
-            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx,self.summit_base_name)   
-            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty,self.summit_base_name)
-            self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta,self.summit_base_name)
+            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx_vel,self.summit_base_name,self.summit_current_theta)   
+            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty_vel,self.summit_base_name,self.summit_current_theta)
+            self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta_vel,self.summit_base_name)
         
         # For Fetch
         if (self._robot_list[1]):
-            self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx,self.fetch_base_name)   
-            self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty,self.fetch_base_name)
-            self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta,self.fetch_base_name)
+            self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx_vel,self.fetch_base_name,self.fetch_current_theta)   
+            self.fetch_control_commands.vely_PID(25.0, 0.3, 1.3, self.fetch_currenty_vel,self.fetch_base_name,self.fetch_current_theta)
+            self.fetch_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.fetch_currenttheta_vel,self.fetch_base_name)
         
         # For Forklift
         if (self._robot_list[2]):
-            self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx,self.forklift_base_name)   
-            self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty,self.forklift_base_name)
-            self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta,self.forklift_base_name)
+            self.forklift_control_commands.velx_PID(25.0, 0.3, 1.3, self.forklift_currentx_vel,self.forklift_base_name,self.forklift_current_theta)   
+            self.forklift_control_commands.vely_PID(25.0, 0.3, 1.3, self.forklift_currenty_vel,self.forklift_base_name,self.forklift_current_theta)
+            self.forklift_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.forklift_currenttheta_vel,self.forklift_base_name)
         
         # stepping if needed
         if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
