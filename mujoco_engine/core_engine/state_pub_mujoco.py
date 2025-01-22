@@ -93,26 +93,46 @@ class StatePublisherMujoco(object):
             counter +=1
 
         # Sensor list
-        self.sensor_list = ['accelerometer_mb','velocimeter_mb','gyroscope_mb','global_pos_mb','global_quat_mb',
-                            'accelerometer_wam_base','velocimeter_wam_base','gyroscope_wam_base','global_pos_wam_base','global_quat_wam_base',
-                            'accelerometer_wam_shoulder_yaw','velocimeter_wam_shoulder_yaw','gyroscope_wam_shoulder_yaw','global_pos_wam_shoulder_yaw','global_quat_wam_shoulder_yaw','joint_pos_wam_shoulder_yaw','joint_vel_wam_shoulder_yaw','joint_effort_wam_shoulder_yaw',
-                            'accelerometer_wam_shoulder_pitch','velocimeter_wam_shoulder_pitch','gyroscope_wam_shoulder_pitch','global_pos_wam_shoulder_pitch','global_quat_wam_shoulder_pitch','joint_pos_wam_shoulder_pitch','joint_vel_wam_shoulder_pitch','joint_effort_wam_shoulder_pitch',
-                            'accelerometer_wam_upper_arm','velocimeter_wam_upper_arm','gyroscope_wam_upper_arm','global_pos_wam_upper_arm','global_quat_wam_upper_arm','joint_pos_wam_upper_arm','joint_vel_wam_upper_arm','joint_effort_wam_upper_arm',
-                            'accelerometer_wam_forearm','velocimeter_wam_forearm','gyroscope_wam_forearm','global_pos_wam_forearm','global_quat_wam_forearm','joint_pos_wam_forearm','joint_vel_wam_forearm','joint_effort_wam_forearm',
-                            'accelerometer_wam_wrist_yaw','velocimeter_wam_wrist_yaw','gyroscope_wam_wrist_yaw','global_pos_wam_wrist_yaw','global_quat_wam_wrist_yaw','joint_pos_wam_wrist_yaw','joint_vel_wam_wrist_yaw','joint_effort_wam_wrist_yaw',
-                            'accelerometer_wam_wrist_pitch','velocimeter_wam_wrist_pitch','gyroscope_wam_wrist_pitch','global_pos_wam_wrist_pitch','global_quat_wam_wrist_pitch','joint_pos_wam_wrist_pitch','joint_vel_wam_wrist_pitch','joint_effort_wam_wrist_pitch',
-                            'accelerometer_wam_wrist_palm','velocimeter_wam_wrist_palm','gyroscope_wam_wrist_palm','global_pos_wam_wrist_palm','global_quat_wam_wrist_palm','joint_pos_wam_wrist_palm','joint_vel_wam_wrist_palm','joint_effort_wam_wrist_palm',
-                            'force_sensor','torque_sensor',
-                            'accelerometer_bhand_palm','velocimeter_bhand_palm','gyroscope_bhand_palm','global_pos_bhand_palm','global_quat_bhand_palm',
-                            'accelerometer_bhand_finger_1_prox','velocimeter_bhand_finger_1_prox','gyroscope_bhand_finger_1_prox','global_pos_bhand_finger_1_prox','global_quat_bhand_finger_1_prox','joint_pos_bhand_finger_1_prox','joint_vel_bhand_finger_1_prox','joint_effort_bhand_finger_1_prox',
-                            'accelerometer_bhand_finger_1_med','velocimeter_bhand_finger_1_med','gyroscope_bhand_finger_1_med','global_pos_bhand_finger_1_med','global_quat_bhand_finger_1_med','joint_pos_bhand_finger_1_med','joint_vel_bhand_finger_1_med','joint_effort_bhand_finger_1_med',
-                            'accelerometer_bhand_finger_1_dist','velocimeter_bhand_finger_1_dist','gyroscope_bhand_finger_1_dist','global_pos_bhand_finger_1_dist','global_quat_bhand_finger_1_dist','joint_pos_bhand_finger_1_dist','joint_vel_bhand_finger_1_dist','joint_effort_bhand_finger_1_dist',
-                            'accelerometer_bhand_finger_2_prox','velocimeter_bhand_finger_2_prox','gyroscope_bhand_finger_2_prox','global_pos_bhand_finger_2_prox','global_quat_bhand_finger_2_prox','joint_pos_bhand_finger_2_prox','joint_vel_bhand_finger_2_prox','joint_effort_bhand_finger_2_prox',
-                            'accelerometer_bhand_finger_2_med','velocimeter_bhand_finger_2_med','gyroscope_bhand_finger_2_med','global_pos_bhand_finger_2_med','global_quat_bhand_finger_2_med','joint_pos_bhand_finger_2_med','joint_vel_bhand_finger_2_med','joint_effort_bhand_finger_2_med',
-                            'accelerometer_bhand_finger_2_dist','velocimeter_bhand_finger_2_dist','gyroscope_bhand_finger_2_dist','global_pos_bhand_finger_2_dist','global_quat_bhand_finger_2_dist','joint_pos_bhand_finger_2_dist','joint_vel_bhand_finger_2_dist','joint_effort_bhand_finger_2_dist',
-                            'accelerometer_bhand_finger_3_med','velocimeter_bhand_finger_3_med','gyroscope_bhand_finger_3_med','global_pos_bhand_finger_3_med','global_quat_bhand_finger_3_med','joint_pos_bhand_finger_3_med','joint_vel_bhand_finger_3_med','joint_effort_bhand_finger_3_med',
-                            'accelerometer_bhand_finger_3_dist','velocimeter_bhand_finger_3_dist','gyroscope_bhand_finger_3_dist','global_pos_bhand_finger_3_dist','global_quat_bhand_finger_3_dist','joint_pos_bhand_finger_3_dist','joint_vel_bhand_finger_3_dist','joint_effort_bhand_finger_3_dist',
-                            'accelerometer_1_cart','accelerometer_2_cart','velocimeter_cart','gyroscope_cart','global_pos_cart','global_quat_cart']
+        # MM
+        mb_sensor_list = ['accelerometer_mb','velocimeter_mb','gyroscope_mb','global_pos_mb','global_quat_mb']
+        wam_sensor_list = ['accelerometer_wam_base','velocimeter_wam_base','gyroscope_wam_base','global_pos_wam_base','global_quat_wam_base',
+                           'accelerometer_wam_shoulder_yaw','velocimeter_wam_shoulder_yaw','gyroscope_wam_shoulder_yaw','global_pos_wam_shoulder_yaw','global_quat_wam_shoulder_yaw','joint_pos_wam_shoulder_yaw','joint_vel_wam_shoulder_yaw','joint_effort_wam_shoulder_yaw',
+                           'accelerometer_wam_shoulder_pitch','velocimeter_wam_shoulder_pitch','gyroscope_wam_shoulder_pitch','global_pos_wam_shoulder_pitch','global_quat_wam_shoulder_pitch','joint_pos_wam_shoulder_pitch','joint_vel_wam_shoulder_pitch','joint_effort_wam_shoulder_pitch',
+                           'accelerometer_wam_upper_arm','velocimeter_wam_upper_arm','gyroscope_wam_upper_arm','global_pos_wam_upper_arm','global_quat_wam_upper_arm','joint_pos_wam_upper_arm','joint_vel_wam_upper_arm','joint_effort_wam_upper_arm',
+                           'accelerometer_wam_forearm','velocimeter_wam_forearm','gyroscope_wam_forearm','global_pos_wam_forearm','global_quat_wam_forearm','joint_pos_wam_forearm','joint_vel_wam_forearm','joint_effort_wam_forearm',
+                           'accelerometer_wam_wrist_yaw','velocimeter_wam_wrist_yaw','gyroscope_wam_wrist_yaw','global_pos_wam_wrist_yaw','global_quat_wam_wrist_yaw','joint_pos_wam_wrist_yaw','joint_vel_wam_wrist_yaw','joint_effort_wam_wrist_yaw',
+                           'accelerometer_wam_wrist_pitch','velocimeter_wam_wrist_pitch','gyroscope_wam_wrist_pitch','global_pos_wam_wrist_pitch','global_quat_wam_wrist_pitch','joint_pos_wam_wrist_pitch','joint_vel_wam_wrist_pitch','joint_effort_wam_wrist_pitch',
+                           'accelerometer_wam_wrist_palm','velocimeter_wam_wrist_palm','gyroscope_wam_wrist_palm','global_pos_wam_wrist_palm','global_quat_wam_wrist_palm','joint_pos_wam_wrist_palm','joint_vel_wam_wrist_palm','joint_effort_wam_wrist_palm']
+        ft_sensor_list = ['force_sensor','torque_sensor']
+        bhand_sensor_list = ['accelerometer_bhand_palm','velocimeter_bhand_palm','gyroscope_bhand_palm','global_pos_bhand_palm','global_quat_bhand_palm',
+                             'accelerometer_bhand_finger_1_prox','velocimeter_bhand_finger_1_prox','gyroscope_bhand_finger_1_prox','global_pos_bhand_finger_1_prox','global_quat_bhand_finger_1_prox','joint_pos_bhand_finger_1_prox','joint_vel_bhand_finger_1_prox','joint_effort_bhand_finger_1_prox',
+                             'accelerometer_bhand_finger_1_med','velocimeter_bhand_finger_1_med','gyroscope_bhand_finger_1_med','global_pos_bhand_finger_1_med','global_quat_bhand_finger_1_med','joint_pos_bhand_finger_1_med','joint_vel_bhand_finger_1_med','joint_effort_bhand_finger_1_med',
+                             'accelerometer_bhand_finger_1_dist','velocimeter_bhand_finger_1_dist','gyroscope_bhand_finger_1_dist','global_pos_bhand_finger_1_dist','global_quat_bhand_finger_1_dist','joint_pos_bhand_finger_1_dist','joint_vel_bhand_finger_1_dist','joint_effort_bhand_finger_1_dist',
+                             'accelerometer_bhand_finger_2_prox','velocimeter_bhand_finger_2_prox','gyroscope_bhand_finger_2_prox','global_pos_bhand_finger_2_prox','global_quat_bhand_finger_2_prox','joint_pos_bhand_finger_2_prox','joint_vel_bhand_finger_2_prox','joint_effort_bhand_finger_2_prox',
+                             'accelerometer_bhand_finger_2_med','velocimeter_bhand_finger_2_med','gyroscope_bhand_finger_2_med','global_pos_bhand_finger_2_med','global_quat_bhand_finger_2_med','joint_pos_bhand_finger_2_med','joint_vel_bhand_finger_2_med','joint_effort_bhand_finger_2_med',
+                             'accelerometer_bhand_finger_2_dist','velocimeter_bhand_finger_2_dist','gyroscope_bhand_finger_2_dist','global_pos_bhand_finger_2_dist','global_quat_bhand_finger_2_dist','joint_pos_bhand_finger_2_dist','joint_vel_bhand_finger_2_dist','joint_effort_bhand_finger_2_dist',
+                             'accelerometer_bhand_finger_3_med','velocimeter_bhand_finger_3_med','gyroscope_bhand_finger_3_med','global_pos_bhand_finger_3_med','global_quat_bhand_finger_3_med','joint_pos_bhand_finger_3_med','joint_vel_bhand_finger_3_med','joint_effort_bhand_finger_3_med',
+                             'accelerometer_bhand_finger_3_dist','velocimeter_bhand_finger_3_dist','gyroscope_bhand_finger_3_dist','global_pos_bhand_finger_3_dist','global_quat_bhand_finger_3_dist','joint_pos_bhand_finger_3_dist','joint_vel_bhand_finger_3_dist','joint_effort_bhand_finger_3_dist']
+        mm_sensor_list = mb_sensor_list+wam_sensor_list+ft_sensor_list+bhand_sensor_list
+
+        # Cart
+        wagon_sensor_list = ['accelerometer_1_cart','accelerometer_2_cart','velocimeter_cart','gyroscope_cart','global_pos_cart','global_quat_cart']
+        # Fetch
+        fetch_sensor_list = ['accelerometer_fetch','velocimeter_fetch','gyroscope_fetch','global_pos_fetch','global_quat_fetch']
+        # Forklift
+        forklift_sensor_list = ['accelerometer_fork_lift','velocimeter_fork_lift','gyroscope_fork_lift','global_pos_fork_lift','global_quat_fork_lift']
+        
+        list_of_sensor_lists = [mm_sensor_list,
+                                fetch_sensor_list,
+                                forklift_sensor_list,
+                                wagon_sensor_list]
+        self.sensor_list = []
+        # Concatenate link-lists
+        counter = 0
+        for _bool in robot_list:
+            if _bool:
+                self.sensor_list += list_of_sensor_lists[counter]
+            counter +=1
 
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
