@@ -53,7 +53,8 @@ class StatePublisherMujoco(object):
         list_of_joint_lists = [summit_wam_joint_list,
                                fetch_joint_list,
                                forklift_joint_list,
-                               wagon_joint_list]
+                               wagon_joint_list,
+                               []]  # This last entry is none because, for the 2nd cart, we have nothing to add.
         self.jointlist = []
         # Concatenate joint-lists
         counter = 0
@@ -83,7 +84,8 @@ class StatePublisherMujoco(object):
         list_of_link_lists = [summit_wam_link_list,
                               fetch_link_list,
                               forklift_link_list,
-                              wagon_link_list]
+                              wagon_link_list,
+                              wagon_link_list]  # We kept the second set of sensor-names the same as only one set of carts will be loaded (so far). If that changes, make new names for the new cart.
         self.linklist =  world_link_list
         # Concatenate link-lists
         counter = 0
