@@ -240,8 +240,8 @@ class Mujoco_Engine:
         # For Forklift
         if (self._robot_list[2]):
             # Place sensors on the Fetch. DO NOT USE cvel. (https://github.com/google-deepmind/mujoco/issues/2210#issuecomment-2476113820)
-            forklift_velocimeter_id = self.mj_model.name2id("velocimeter_forklift",'sensor')
-            forklift_gyroscope_id = self.mj_model.name2id("gyroscope_forklift",'sensor')
+            forklift_velocimeter_id = self.mj_model.name2id("velocimeter_fork_lift",'sensor')
+            forklift_gyroscope_id = self.mj_model.name2id("gyroscope_fork_lift",'sensor')
             # Sensor index
             forklift_velocimeter_sensor_index = self.mj_model.sensor_adr[forklift_velocimeter_id]
             forklift_gyroscope_sensor_index = self.mj_model.sensor_adr[forklift_gyroscope_id]
