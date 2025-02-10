@@ -74,6 +74,9 @@ class StatePublisherMujoco(object):
         world_link_list = ['world']
         wagon_link_list = ['utility/wagon', 'wagon', 'wagon/LF', 'wagon/LF/whl', 'wagon/LR', 'wagon/LR/whl', 'wagon/RF', 
                            'wagon/RF/whl', 'wagon/RR', 'wagon/RR/whl', 'wagon/handle', 'wagon/pocket', 'wagon/wire_frame']
+        cart_link_list = ['cart/base_link', 'wagon', 'cart/swivel_hub/L_link', 'cart/whl/FL_link',
+                          'cart/swivel_hub/R_link', 'cart/whl/FR_link', 'cart/static_hub/L_link', 'cart/whl/RL_link',
+                          'cart/static_hub/R_link', 'cart/whl/RR_link']
         fetch_link_list = ['fetch/base_link','fetch/whl/L_link','fetch/whl/R_link','fetch/laser_link','fetch/torso_fixed_link',
                            'fetch/torso_lift_link','fetch/bellows_link','fetch/bellows_2_link',
                            'fetch/head_pan_link','fetch/head_tilt_link',
@@ -85,7 +88,7 @@ class StatePublisherMujoco(object):
                               fetch_link_list,
                               forklift_link_list,
                               wagon_link_list,
-                              wagon_link_list]  # We kept the second set of sensor-names the same as only one set of carts will be loaded (so far). If that changes, make new names for the new cart.
+                              cart_link_list]
         self.linklist =  world_link_list
         # Concatenate link-lists
         counter = 0
@@ -127,7 +130,8 @@ class StatePublisherMujoco(object):
         list_of_sensor_lists = [mm_sensor_list,
                                 fetch_sensor_list,
                                 forklift_sensor_list,
-                                wagon_sensor_list]
+                                wagon_sensor_list,
+                                wagon_sensor_list]  # We kept the second set of sensor-names the same as only one set of carts will be loaded (so far). If that changes, make new names for the new cart.
         self.sensor_list = []
         # Concatenate link-lists
         counter = 0
@@ -1076,124 +1080,167 @@ class StatePublisherMujoco(object):
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f3/dist").qacc[0])
         joint_state_stamped.effort.append(sensor_data[136][0])
 
-        # Fetch
-        # Linear acceleration
-        temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[137][0]
-        temp_accel.linear.y = sensor_data[137][1]
-        temp_accel.linear.z = sensor_data[137][2]
-        # Angular acceleration
-        temp_accel.angular.x = 0
-        temp_accel.angular.y = 0
-        temp_accel.angular.z = 0
-        link_state_stamped.accel.append(temp_accel)
-
-        # Link name
-        link_state_stamped.name.append("fetch/base_link")
-        # Twist
-        temp_twist = Twist()
-        # Linear component
-        temp_twist.linear.x = sensor_data[138][0]
-        temp_twist.linear.y = sensor_data[138][1]
-        temp_twist.linear.z = sensor_data[138][2]
-        # Angular component
-        temp_twist.angular.x = sensor_data[139][0]
-        temp_twist.angular.y = sensor_data[139][1]
-        temp_twist.angular.z = sensor_data[139][2]
-        link_state_stamped.twist.append(temp_twist)
-
-        # Link pose
-        temp_pose = Pose()
-        temp_pose.position.x = sensor_data[140][0]
-        temp_pose.position.y = sensor_data[140][1]
-        temp_pose.position.z = sensor_data[140][2]
-
-        temp_pose.orientation.w = sensor_data[141][0]
-        temp_pose.orientation.x = sensor_data[141][1]
-        temp_pose.orientation.y = sensor_data[141][2]
-        temp_pose.orientation.z = sensor_data[141][3]
-        link_state_stamped.pose.append(temp_pose)
-
-        # Fork-lift
-        # Linear acceleration
-        temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[142][0]
-        temp_accel.linear.y = sensor_data[142][1]
-        temp_accel.linear.z = sensor_data[142][2]
-        # Angular acceleration
-        temp_accel.angular.x = 0
-        temp_accel.angular.y = 0
-        temp_accel.angular.z = 0
-        link_state_stamped.accel.append(temp_accel)
-
-        # Link name
-        link_state_stamped.name.append("fork_lift/base_link")
-        # Twist
-        temp_twist = Twist()
-        # Linear component
-        temp_twist.linear.x = sensor_data[143][0]
-        temp_twist.linear.y = sensor_data[143][1]
-        temp_twist.linear.z = sensor_data[143][2]
-        # Angular component
-        temp_twist.angular.x = sensor_data[144][0]
-        temp_twist.angular.y = sensor_data[144][1]
-        temp_twist.angular.z = sensor_data[144][2]
-        link_state_stamped.twist.append(temp_twist)
-
-        # Link pose
-        temp_pose = Pose()
-        temp_pose.position.x = sensor_data[145][0]
-        temp_pose.position.y = sensor_data[145][1]
-        temp_pose.position.z = sensor_data[145][2]
-
-        temp_pose.orientation.w = sensor_data[146][0]
-        temp_pose.orientation.x = sensor_data[146][1]
-        temp_pose.orientation.y = sensor_data[146][2]
-        temp_pose.orientation.z = sensor_data[146][3]
-        link_state_stamped.pose.append(temp_pose)
-
         # Cart
         # Linear acceleration
         temp_accel_1 = Accel()
-        temp_accel_1.linear.x = sensor_data[147][0]
-        temp_accel_1.linear.y = sensor_data[147][1]
-        temp_accel_1.linear.z = sensor_data[147][2]
+        temp_accel_1.linear.x = sensor_data[137][0]
+        temp_accel_1.linear.y = sensor_data[137][1]
+        temp_accel_1.linear.z = sensor_data[137][2]
         # Angular acceleration
         temp_accel_1.angular.x = 0
         temp_accel_1.angular.y = 0
-        temp_accel_1.angular.z = (sensor_data[148][1]-sensor_data[147][1])/0.1
+        temp_accel_1.angular.z = (sensor_data[138][1]-sensor_data[137][1])/0.1
         force_torque_comp_stamped.cart_accel_1 = temp_accel_1
         # Linear acceleration
         temp_accel_2 = Accel()
-        temp_accel_2.linear.x = sensor_data[148][0]
-        temp_accel_2.linear.y = sensor_data[148][1]
-        temp_accel_2.linear.z = sensor_data[148][2]
+        temp_accel_2.linear.x = sensor_data[138][0]
+        temp_accel_2.linear.y = sensor_data[138][1]
+        temp_accel_2.linear.z = sensor_data[138][2]
         # Angular acceleration
         temp_accel_2.angular.x = 0
         temp_accel_2.angular.y = 0
-        temp_accel_2.angular.z = (sensor_data[148][1]-sensor_data[147][1])/0.1
+        temp_accel_2.angular.z = (sensor_data[138][1]-sensor_data[137][1])/0.1
         force_torque_comp_stamped.cart_accel_2 = temp_accel_2
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[149][0]
-        temp_twist.linear.y = sensor_data[149][1]
-        temp_twist.linear.z = sensor_data[149][2]
+        temp_twist.linear.x = sensor_data[139][0]
+        temp_twist.linear.y = sensor_data[139][1]
+        temp_twist.linear.z = sensor_data[139][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[150][0]
-        temp_twist.angular.y = sensor_data[150][1]
-        temp_twist.angular.z = sensor_data[150][2]
+        temp_twist.angular.x = sensor_data[140][0]
+        temp_twist.angular.y = sensor_data[140][1]
+        temp_twist.angular.z = sensor_data[140][2]
         force_torque_comp_stamped.cart_twist = temp_twist
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[151][0]
-        temp_pose.position.y = sensor_data[151][1]
-        temp_pose.position.z = sensor_data[151][2]
-        temp_pose.orientation.w = sensor_data[152][0]
-        temp_pose.orientation.x = sensor_data[152][1]
-        temp_pose.orientation.y = sensor_data[152][2]
-        temp_pose.orientation.z = sensor_data[152][3]
+        temp_pose.position.x = sensor_data[141][0]
+        temp_pose.position.y = sensor_data[141][1]
+        temp_pose.position.z = sensor_data[141][2]
+        temp_pose.orientation.w = sensor_data[142][0]
+        temp_pose.orientation.x = sensor_data[142][1]
+        temp_pose.orientation.y = sensor_data[142][2]
+        temp_pose.orientation.z = sensor_data[142][3]
         force_torque_comp_stamped.cart_pose = temp_pose
+
+        # # Fetch
+        # # Linear acceleration
+        # temp_accel = Accel()
+        # temp_accel.linear.x = sensor_data[137][0]
+        # temp_accel.linear.y = sensor_data[137][1]
+        # temp_accel.linear.z = sensor_data[137][2]
+        # # Angular acceleration
+        # temp_accel.angular.x = 0
+        # temp_accel.angular.y = 0
+        # temp_accel.angular.z = 0
+        # link_state_stamped.accel.append(temp_accel)
+
+        # # Link name
+        # link_state_stamped.name.append("fetch/base_link")
+        # # Twist
+        # temp_twist = Twist()
+        # # Linear component
+        # temp_twist.linear.x = sensor_data[138][0]
+        # temp_twist.linear.y = sensor_data[138][1]
+        # temp_twist.linear.z = sensor_data[138][2]
+        # # Angular component
+        # temp_twist.angular.x = sensor_data[139][0]
+        # temp_twist.angular.y = sensor_data[139][1]
+        # temp_twist.angular.z = sensor_data[139][2]
+        # link_state_stamped.twist.append(temp_twist)
+
+        # # Link pose
+        # temp_pose = Pose()
+        # temp_pose.position.x = sensor_data[140][0]
+        # temp_pose.position.y = sensor_data[140][1]
+        # temp_pose.position.z = sensor_data[140][2]
+
+        # temp_pose.orientation.w = sensor_data[141][0]
+        # temp_pose.orientation.x = sensor_data[141][1]
+        # temp_pose.orientation.y = sensor_data[141][2]
+        # temp_pose.orientation.z = sensor_data[141][3]
+        # link_state_stamped.pose.append(temp_pose)
+
+        # # Fork-lift
+        # # Linear acceleration
+        # temp_accel = Accel()
+        # temp_accel.linear.x = sensor_data[142][0]
+        # temp_accel.linear.y = sensor_data[142][1]
+        # temp_accel.linear.z = sensor_data[142][2]
+        # # Angular acceleration
+        # temp_accel.angular.x = 0
+        # temp_accel.angular.y = 0
+        # temp_accel.angular.z = 0
+        # link_state_stamped.accel.append(temp_accel)
+
+        # # Link name
+        # link_state_stamped.name.append("fork_lift/base_link")
+        # # Twist
+        # temp_twist = Twist()
+        # # Linear component
+        # temp_twist.linear.x = sensor_data[143][0]
+        # temp_twist.linear.y = sensor_data[143][1]
+        # temp_twist.linear.z = sensor_data[143][2]
+        # # Angular component
+        # temp_twist.angular.x = sensor_data[144][0]
+        # temp_twist.angular.y = sensor_data[144][1]
+        # temp_twist.angular.z = sensor_data[144][2]
+        # link_state_stamped.twist.append(temp_twist)
+
+        # # Link pose
+        # temp_pose = Pose()
+        # temp_pose.position.x = sensor_data[145][0]
+        # temp_pose.position.y = sensor_data[145][1]
+        # temp_pose.position.z = sensor_data[145][2]
+
+        # temp_pose.orientation.w = sensor_data[146][0]
+        # temp_pose.orientation.x = sensor_data[146][1]
+        # temp_pose.orientation.y = sensor_data[146][2]
+        # temp_pose.orientation.z = sensor_data[146][3]
+        # link_state_stamped.pose.append(temp_pose)
+
+        # # Cart
+        # # Linear acceleration
+        # temp_accel_1 = Accel()
+        # temp_accel_1.linear.x = sensor_data[147][0]
+        # temp_accel_1.linear.y = sensor_data[147][1]
+        # temp_accel_1.linear.z = sensor_data[147][2]
+        # # Angular acceleration
+        # temp_accel_1.angular.x = 0
+        # temp_accel_1.angular.y = 0
+        # temp_accel_1.angular.z = (sensor_data[148][1]-sensor_data[147][1])/0.1
+        # force_torque_comp_stamped.cart_accel_1 = temp_accel_1
+        # # Linear acceleration
+        # temp_accel_2 = Accel()
+        # temp_accel_2.linear.x = sensor_data[148][0]
+        # temp_accel_2.linear.y = sensor_data[148][1]
+        # temp_accel_2.linear.z = sensor_data[148][2]
+        # # Angular acceleration
+        # temp_accel_2.angular.x = 0
+        # temp_accel_2.angular.y = 0
+        # temp_accel_2.angular.z = (sensor_data[148][1]-sensor_data[147][1])/0.1
+        # force_torque_comp_stamped.cart_accel_2 = temp_accel_2
+        # # Twist
+        # temp_twist = Twist()
+        # # Linear component
+        # temp_twist.linear.x = sensor_data[149][0]
+        # temp_twist.linear.y = sensor_data[149][1]
+        # temp_twist.linear.z = sensor_data[149][2]
+        # # Angular component
+        # temp_twist.angular.x = sensor_data[150][0]
+        # temp_twist.angular.y = sensor_data[150][1]
+        # temp_twist.angular.z = sensor_data[150][2]
+        # force_torque_comp_stamped.cart_twist = temp_twist
+        # # Link pose
+        # temp_pose = Pose()
+        # temp_pose.position.x = sensor_data[151][0]
+        # temp_pose.position.y = sensor_data[151][1]
+        # temp_pose.position.z = sensor_data[151][2]
+        # temp_pose.orientation.w = sensor_data[152][0]
+        # temp_pose.orientation.x = sensor_data[152][1]
+        # temp_pose.orientation.y = sensor_data[152][2]
+        # temp_pose.orientation.z = sensor_data[152][3]
+        # force_torque_comp_stamped.cart_pose = temp_pose
 
         # Publish Link-states
         self.pub_link_state_sensor.publish(link_state_stamped)
