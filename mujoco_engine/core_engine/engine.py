@@ -165,9 +165,12 @@ class Mujoco_Engine:
             self.width += config["width"]
         
         # Start video capture
-        self.video = cv2.VideoWriter(self._write_to+'/filename.avi',  
-                                    cv2.VideoWriter_fourcc(*'MJPG'), 
-                                    10, (self.width,self.h_min)) 
+        self.camera_video = cv2.VideoWriter(self._write_to+'/camera.avi',  
+                                            cv2.VideoWriter_fourcc(*'MJPG'), 
+                                            10, (self.width,self.h_min))
+        self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
+                                              cv2.VideoWriter_fourcc(*'MJPG'), 
+                                              10, (1920,1080))
 
         
     #==================================#
@@ -194,7 +197,8 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
-    def _update(self, if_camera_preview=True):
+    def _update(self, if_camera_preview=False
+                    , if_viewport_preview=True):
 
         # Get current velocity of base for PID control
         # For Summit
@@ -295,6 +299,16 @@ class Mujoco_Engine:
             self.mj_viewer.render_safe()
             self.i=self.steps_per_render-1
 
+            # Set "if_viewport_preview" to True (input "_update" function) when you want to plot the viewport's view
+            if if_viewport_preview:
+                # - capture view:
+                viewport_data = self.mj_viewer.acquire_viewport_frames_safe()
+                img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
+                # img = cv2.flip(img, 0)
+                # img = cv2.resize(img, (1280, 720))
+                self.viewport_video.write(img)
+                cv2.waitKey(int(1000/self._rate_Hz))
+
             # Set "if_camera_preview" to True (input "_update" function) when you want to plot the cameras mounted on the WAM
             # Rendering of sensor cameras takes long!! Reduce update frequency to maintain real time simulation!
             if if_camera_preview:
@@ -325,7 +339,7 @@ class Mujoco_Engine:
                 #             uint_8_img
                 #         )
                 cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
-                self.video.write(cv2.hconcat(cv2_capture_window))
+                self.camera_video.write(cv2.hconcat(cv2_capture_window))
                 cv2.waitKey(int(1000/self._rate_Hz))
 
         self.i-=1
@@ -334,7 +348,6 @@ class Mujoco_Engine:
         self.state_pub.pub_joint_states()
         self.state_pub.pub_link_states()
         self.state_pub.pub_sensor_states()
-
 
         # Publish simulation time
         self.simtime.data = self.mj_data.time
