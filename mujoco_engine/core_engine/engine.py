@@ -303,11 +303,12 @@ class Mujoco_Engine:
             if if_viewport_preview:
                 # - capture view:
                 viewport_data = self.mj_viewer.acquire_viewport_frames_safe()
-                img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
-                # img = cv2.flip(img, 0)
-                # img = cv2.resize(img, (1280, 720))
-                self.viewport_video.write(img)
-                cv2.waitKey(int(1000/self._rate_Hz))
+                if(viewport_data["frame_buffer"] == []):
+                    img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
+                    # img = cv2.flip(img, 0)
+                    # img = cv2.resize(img, (1280, 720))
+                    self.viewport_video.write(img)
+                    cv2.waitKey(int(1000/self._rate_Hz))
 
             # Set "if_camera_preview" to True (input "_update" function) when you want to plot the cameras mounted on the WAM
             # Rendering of sensor cameras takes long!! Reduce update frequency to maintain real time simulation!
