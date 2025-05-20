@@ -114,6 +114,8 @@ class StatePublisherMujoco(object):
                             'accelerometer_bhand_finger_3_dist','velocimeter_bhand_finger_3_dist','gyroscope_bhand_finger_3_dist','global_pos_bhand_finger_3_dist','global_quat_bhand_finger_3_dist','joint_pos_bhand_finger_3_dist','joint_vel_bhand_finger_3_dist','joint_effort_bhand_finger_3_dist',
                             'accelerometer_1_cart','accelerometer_2_cart','velocimeter_cart','gyroscope_cart','global_pos_cart','global_quat_cart']
 
+        # MB effort
+        self.mb_effort = ['smt/pose/x','smt/pose/y','smt/orie/z']
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self):
 
@@ -268,6 +270,12 @@ class StatePublisherMujoco(object):
             # Append sensor data
             sensor_data.append(self.data.sensordata[sensor_index:(sensor_index+sensor_dim)])
         
+        # List of actuator commands
+        act_eff_data = []
+        # Actuator effort command
+        for act_name in self.mb_effort:
+            act_eff_data.append(self.data.actuator(act_name).ctrl)
+        
         # Current time
         curr_time = rospy.Time.now()
         link_state_stamped.header.stamp = curr_time
@@ -317,6 +325,31 @@ class StatePublisherMujoco(object):
         temp_pose.orientation.z = sensor_data[4][3]
         link_state_stamped.pose.append(temp_pose)
         force_torque_comp_stamped.mb_pose = temp_pose
+
+        # Joint state
+        joint_state_stamped.name.append("smt/pose/x")
+        joint_state_stamped.position.append(0)
+        joint_state_stamped.velocity.append(0)
+        joint_state_stamped.acceleration.append(0)
+        joint_state_stamped.effort.append(act_eff_data[0])
+
+        force_torque_comp_stamped.mb_effort.append(act_eff_data[0])
+
+        joint_state_stamped.name.append("smt/pose/y")
+        joint_state_stamped.position.append(0)
+        joint_state_stamped.velocity.append(0)
+        joint_state_stamped.acceleration.append(0)
+        joint_state_stamped.effort.append(act_eff_data[1])
+
+        force_torque_comp_stamped.mb_effort.append(act_eff_data[1])
+
+        joint_state_stamped.name.append("smt/orie/z")
+        joint_state_stamped.position.append(0)
+        joint_state_stamped.velocity.append(0)
+        joint_state_stamped.acceleration.append(0)
+        joint_state_stamped.effort.append(act_eff_data[2])
+
+        force_torque_comp_stamped.mb_effort.append(act_eff_data[2])
 
         # WAM
         # Base Link
@@ -399,6 +432,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[19][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[20][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J1").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[21][0])
 
         # Shoulder Pitch Link
         # Linear acceleration
@@ -445,6 +479,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[27][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[28][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J2").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[29][0])
 
         # Upper Arm Link
         # Linear acceleration
@@ -491,6 +526,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[35][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[36][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J3").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[37][0])
 
         # Forearm Link
         # Linear acceleration
@@ -537,6 +573,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[43][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[44][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J4").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[45][0])
 
         # Wrist Yaw Link
         # Linear acceleration
@@ -583,6 +620,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[51][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[52][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J5").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[53][0])
 
         # Wrist Pitch Link
         # Linear acceleration
@@ -629,6 +667,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[59][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[60][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J6").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[61][0])
 
         # Wrist Palm Link
         # Linear acceleration
@@ -675,6 +714,7 @@ class StatePublisherMujoco(object):
         force_torque_comp_stamped.joint_position.append(sensor_data[67][0])
         force_torque_comp_stamped.joint_velocity.append(sensor_data[68][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J7").qacc[0])
+        force_torque_comp_stamped.joint_effort.append(sensor_data[69][0])
 
         # Force Torque Sensor
         force_torque_state_stamped.wrench.force.x = sensor_data[70][0]
