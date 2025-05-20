@@ -3,6 +3,7 @@
 # Subscribers for reading control commands from hw_interface and writing them into mj_data to be used next engine step
 # Last version: Nov 28, 2023 Tim van Meijel
 
+import numpy as np
 import rospy
 from math import pi, sin, cos
 from geometry_msgs.msg import Twist
@@ -33,6 +34,22 @@ class ControlCommand(object):
         self.last_time_theta = rospy.Time().now().to_time()
 
         self.vel_base = [0.0, 0.0, 0.0]
+
+        # Summit H-matrix
+        gamma_smt = 45/180*np.pi
+        dx_1_smt = 0.222
+        dx_2_smt = 0.223
+        dy_1_smt = 0.22
+        dy_2_smt = 0.22
+        whl_rad_smt = 0.127
+        tan_gamma_smt = np.tan(gamma_smt)
+        self.h_mat_smt = np.array([[1,  tan_gamma_smt, -dy_1_smt+dx_1_smt*tan_gamma_smt],
+                                   [1, -tan_gamma_smt,  dy_2_smt-dx_1_smt*tan_gamma_smt],
+                                   [1,  tan_gamma_smt,  dy_2_smt-dx_2_smt*tan_gamma_smt],
+                                   [1, -tan_gamma_smt, -dy_1_smt+dx_2_smt*tan_gamma_smt]])/whl_rad_smt
+        self.e_whl_last_smt = np.zeros((4,1))
+        self.last_time_whl_smt = rospy.Time().now().to_time()
+        self.I_whl_smt = np.zeros((4,1))
 
 
     def vel_base_callback(self, msg):
@@ -105,3 +122,40 @@ class ControlCommand(object):
 
         # Set control commands in mj_data
         self.mj_data_control.actuator(base_name+'/orie/z').ctrl = control
+    
+    # PID loop to control wheel velocities
+    def wheel_PID(self, Kp, Ki, Kd, CP, base_name):
+
+        # Convert reference velocities into mapframe
+        temp_mb_twist = np.array(self.vel_base)
+        mb_twist = temp_mb_twist.reshape(3,1)
+
+        # Wheel velocity: Set point
+        whl_vel_SP = np.zeros((4,1))
+        if(base_name is "smt"):
+            whl_vel_SP = np.matmul(self.h_mat_smt,mb_twist)
+
+        t = rospy.Time().now().to_time()
+        # print("Wheel velocity set-point:")
+        # print(whl_vel_SP)
+        # print(CP)
+        e_whl = whl_vel_SP - CP
+
+        # Compute PID variables
+        P = e_whl*Kp
+        self.I_whl_smt += Ki*e_whl*(t-self.last_time_whl_smt+0.0001)
+        D = Kd*(e_whl-self.e_whl_last_smt)/(t-self.last_time_whl_smt+0.0001)
+
+        self.e_whl_last_smt = e_whl
+        self.last_time_whl_smt = t
+
+        control = P+self.I_whl_smt+D
+
+        # print(P)
+        # print(self.I_whl_smt)
+        # print(D)
+        # Set control commands in mj_data
+        self.mj_data_control.actuator(base_name+'/whl_LF').ctrl = control[0,0]
+        self.mj_data_control.actuator(base_name+'/whl_RF').ctrl = control[1,0]
+        self.mj_data_control.actuator(base_name+'/whl_RR').ctrl = control[2,0]
+        self.mj_data_control.actuator(base_name+'/whl_LR').ctrl = control[3,0]
