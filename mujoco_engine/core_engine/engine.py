@@ -136,6 +136,7 @@ class Mujoco_Engine:
         self.summit_currentx_vel = 0.0
         self.summit_currenty_vel = 0.0
         self.summit_currenttheta_vel = 0.0
+        self.summit_current_whl_vel = np.zeros((4,1))
         # Initialized current Fetch-base twist
         self.fetch_currentx_vel = 0.0
         self.fetch_currenty_vel = 0.0
@@ -209,18 +210,39 @@ class Mujoco_Engine:
             # https://www.roboti.us/forum/index.php?threads/reading-sensor-values.3972/#post-5368
             mb_velocimeter_id = self.mj_model.name2id("velocimeter_mb",'sensor')
             mb_gyroscope_id = self.mj_model.name2id("gyroscope_mb",'sensor')
+            mb_whl_lf_id = self.mj_model.name2id("joint_vel_mb_lf",'sensor')
+            mb_whl_rf_id = self.mj_model.name2id("joint_vel_mb_rf",'sensor')
+            mb_whl_rr_id = self.mj_model.name2id("joint_vel_mb_rr",'sensor')
+            mb_whl_lr_id = self.mj_model.name2id("joint_vel_mb_lr",'sensor')
             # Sensor index
             mb_velocimeter_sensor_index = self.mj_model.sensor_adr[mb_velocimeter_id]
             mb_gyroscope_sensor_index = self.mj_model.sensor_adr[mb_gyroscope_id]
+            mb_whl_lf_sensor_index = self.mj_model.sensor_adr[mb_whl_lf_id]
+            mb_whl_rf_sensor_index = self.mj_model.sensor_adr[mb_whl_rf_id]
+            mb_whl_rr_sensor_index = self.mj_model.sensor_adr[mb_whl_rr_id]
+            mb_whl_lr_sensor_index = self.mj_model.sensor_adr[mb_whl_lr_id]
             # Sensor dimension
             mb_velocimeter_sensor_dim = self.mj_model.sensor_dim[mb_velocimeter_id]
             mb_gyroscope_sensor_dim = self.mj_model.sensor_dim[mb_gyroscope_id]
+            mb_whl_lf_sensor_dim = self.mj_model.sensor_dim[mb_whl_lf_id]
+            mb_whl_rf_sensor_dim = self.mj_model.sensor_dim[mb_whl_rf_id]
+            mb_whl_rr_sensor_dim = self.mj_model.sensor_dim[mb_whl_rr_id]
+            mb_whl_lr_sensor_dim = self.mj_model.sensor_dim[mb_whl_lr_id]
             # Append sensor data
             mb_velocimeter_sensor_data = self.mj_data.sensordata[mb_velocimeter_sensor_index:(mb_velocimeter_sensor_index+mb_velocimeter_sensor_dim)]
             mb_gyroscope_sensor_data = self.mj_data.sensordata[mb_gyroscope_sensor_index:(mb_gyroscope_sensor_index+mb_gyroscope_sensor_dim)]
+            mb_whl_lf_sensor_data = self.mj_data.sensordata[mb_whl_lf_sensor_index:(mb_whl_lf_sensor_index+mb_whl_lf_sensor_dim)]
+            mb_whl_rf_sensor_data = self.mj_data.sensordata[mb_whl_rf_sensor_index:(mb_whl_rf_sensor_index+mb_whl_rf_sensor_dim)]
+            mb_whl_rr_sensor_data = self.mj_data.sensordata[mb_whl_rr_sensor_index:(mb_whl_rr_sensor_index+mb_whl_rr_sensor_dim)]
+            mb_whl_lr_sensor_data = self.mj_data.sensordata[mb_whl_lr_sensor_index:(mb_whl_lr_sensor_index+mb_whl_lr_sensor_dim)]
+
             self.summit_currentx_vel = mb_velocimeter_sensor_data[0]
             self.summit_currenty_vel = mb_velocimeter_sensor_data[1]
             self.summit_currenttheta_vel = mb_gyroscope_sensor_data[2]
+            self.summit_current_whl_vel[0,0] = mb_whl_lf_sensor_data
+            self.summit_current_whl_vel[1,0] = mb_whl_rf_sensor_data
+            self.summit_current_whl_vel[2,0] = mb_whl_rr_sensor_data
+            self.summit_current_whl_vel[3,0] = mb_whl_lr_sensor_data
 
         
         # For Fetch
@@ -265,7 +287,8 @@ class Mujoco_Engine:
             self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx_vel,self.summit_base_name)   
             self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty_vel,self.summit_base_name)
             self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta_vel,self.summit_base_name)
-        
+            self.summit_control_commands.wheel_PID(20, 0.3, 0.01, self.summit_current_whl_vel,self.summit_base_name)
+
         # For Fetch
         if (self._robot_list[1]):
             self.fetch_control_commands.velx_PID(25.0, 0.3, 1.3, self.fetch_currentx_vel,self.fetch_base_name)   
