@@ -93,7 +93,7 @@ class StatePublisherMujoco(object):
             counter +=1
 
         # Sensor list
-        self.sensor_list = ['accelerometer_mb','velocimeter_mb','gyroscope_mb','global_pos_mb','global_quat_mb',
+        self.sensor_list = ['accelerometer_mb','velocimeter_mb','gyroscope_mb','global_pos_mb','global_quat_mb','joint_vel_mb_lf','joint_vel_mb_rf','joint_vel_mb_rr','joint_vel_mb_lr',
                             'accelerometer_wam_base','velocimeter_wam_base','gyroscope_wam_base','global_pos_wam_base','global_quat_wam_base',
                             'accelerometer_wam_shoulder_yaw','velocimeter_wam_shoulder_yaw','gyroscope_wam_shoulder_yaw','global_pos_wam_shoulder_yaw','global_quat_wam_shoulder_yaw','joint_pos_wam_shoulder_yaw','joint_vel_wam_shoulder_yaw','joint_effort_wam_shoulder_yaw',
                             'accelerometer_wam_shoulder_pitch','velocimeter_wam_shoulder_pitch','gyroscope_wam_shoulder_pitch','global_pos_wam_shoulder_pitch','global_quat_wam_shoulder_pitch','joint_pos_wam_shoulder_pitch','joint_vel_wam_shoulder_pitch','joint_effort_wam_shoulder_pitch',
@@ -322,9 +322,9 @@ class StatePublisherMujoco(object):
         # Base Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[5][0]
-        temp_accel.linear.y = sensor_data[5][1]
-        temp_accel.linear.z = sensor_data[5][2]
+        temp_accel.linear.x = sensor_data[9][0]
+        temp_accel.linear.y = sensor_data[9][1]
+        temp_accel.linear.z = sensor_data[9][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -335,31 +335,31 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[6][0]
-        temp_twist.linear.y = sensor_data[6][1]
-        temp_twist.linear.z = sensor_data[6][2]
+        temp_twist.linear.x = sensor_data[10][0]
+        temp_twist.linear.y = sensor_data[10][1]
+        temp_twist.linear.z = sensor_data[10][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[7][0]
-        temp_twist.angular.y = sensor_data[7][1]
-        temp_twist.angular.z = sensor_data[7][2]
+        temp_twist.angular.x = sensor_data[11][0]
+        temp_twist.angular.y = sensor_data[11][1]
+        temp_twist.angular.z = sensor_data[11][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[8][0]
-        temp_pose.position.y = sensor_data[8][1]
-        temp_pose.position.z = sensor_data[8][2]
-        temp_pose.orientation.w = sensor_data[9][0]
-        temp_pose.orientation.x = sensor_data[9][1]
-        temp_pose.orientation.y = sensor_data[9][2]
-        temp_pose.orientation.z = sensor_data[9][3]
+        temp_pose.position.x = sensor_data[12][0]
+        temp_pose.position.y = sensor_data[12][1]
+        temp_pose.position.z = sensor_data[12][2]
+        temp_pose.orientation.w = sensor_data[13][0]
+        temp_pose.orientation.x = sensor_data[13][1]
+        temp_pose.orientation.y = sensor_data[13][2]
+        temp_pose.orientation.z = sensor_data[13][3]
         link_state_stamped.pose.append(temp_pose)
 
         # Shoulder Yaw Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[10][0]
-        temp_accel.linear.y = sensor_data[10][1]
-        temp_accel.linear.z = sensor_data[10][2]
+        temp_accel.linear.x = sensor_data[14][0]
+        temp_accel.linear.y = sensor_data[14][1]
+        temp_accel.linear.z = sensor_data[14][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -370,42 +370,42 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[11][0]
-        temp_twist.linear.y = sensor_data[11][1]
-        temp_twist.linear.z = sensor_data[11][2]
+        temp_twist.linear.x = sensor_data[15][0]
+        temp_twist.linear.y = sensor_data[15][1]
+        temp_twist.linear.z = sensor_data[15][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[12][0]
-        temp_twist.angular.y = sensor_data[12][1]
-        temp_twist.angular.z = sensor_data[12][2]
+        temp_twist.angular.x = sensor_data[16][0]
+        temp_twist.angular.y = sensor_data[16][1]
+        temp_twist.angular.z = sensor_data[16][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[13][0]
-        temp_pose.position.y = sensor_data[13][1]
-        temp_pose.position.z = sensor_data[13][2]
-        temp_pose.orientation.w = sensor_data[14][0]
-        temp_pose.orientation.x = sensor_data[14][1]
-        temp_pose.orientation.y = sensor_data[14][2]
-        temp_pose.orientation.z = sensor_data[14][3]
+        temp_pose.position.x = sensor_data[17][0]
+        temp_pose.position.y = sensor_data[17][1]
+        temp_pose.position.z = sensor_data[17][2]
+        temp_pose.orientation.w = sensor_data[18][0]
+        temp_pose.orientation.x = sensor_data[18][1]
+        temp_pose.orientation.y = sensor_data[18][2]
+        temp_pose.orientation.z = sensor_data[18][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J1")
-        joint_state_stamped.position.append(sensor_data[15][0])
-        joint_state_stamped.velocity.append(sensor_data[16][0])
+        joint_state_stamped.position.append(sensor_data[19][0])
+        joint_state_stamped.velocity.append(sensor_data[20][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J1").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[17][0])
+        joint_state_stamped.effort.append(sensor_data[21][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J1")
-        force_torque_comp_stamped.joint_position.append(sensor_data[15][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[16][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[19][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[20][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J1").qacc[0])
 
         # Shoulder Pitch Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[18][0]
-        temp_accel.linear.y = sensor_data[18][1]
-        temp_accel.linear.z = sensor_data[18][2]
+        temp_accel.linear.x = sensor_data[22][0]
+        temp_accel.linear.y = sensor_data[22][1]
+        temp_accel.linear.z = sensor_data[22][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -416,42 +416,42 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[19][0]
-        temp_twist.linear.y = sensor_data[19][1]
-        temp_twist.linear.z = sensor_data[19][2]
+        temp_twist.linear.x = sensor_data[23][0]
+        temp_twist.linear.y = sensor_data[23][1]
+        temp_twist.linear.z = sensor_data[23][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[20][0]
-        temp_twist.angular.y = sensor_data[20][1]
-        temp_twist.angular.z = sensor_data[20][2]
+        temp_twist.angular.x = sensor_data[24][0]
+        temp_twist.angular.y = sensor_data[24][1]
+        temp_twist.angular.z = sensor_data[24][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[21][0]
-        temp_pose.position.y = sensor_data[21][1]
-        temp_pose.position.z = sensor_data[21][2]
-        temp_pose.orientation.w = sensor_data[22][0]
-        temp_pose.orientation.x = sensor_data[22][1]
-        temp_pose.orientation.y = sensor_data[22][2]
-        temp_pose.orientation.z = sensor_data[22][3]
+        temp_pose.position.x = sensor_data[25][0]
+        temp_pose.position.y = sensor_data[25][1]
+        temp_pose.position.z = sensor_data[25][2]
+        temp_pose.orientation.w = sensor_data[26][0]
+        temp_pose.orientation.x = sensor_data[26][1]
+        temp_pose.orientation.y = sensor_data[26][2]
+        temp_pose.orientation.z = sensor_data[26][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J2")
-        joint_state_stamped.position.append(sensor_data[23][0])
-        joint_state_stamped.velocity.append(sensor_data[24][0])
+        joint_state_stamped.position.append(sensor_data[27][0])
+        joint_state_stamped.velocity.append(sensor_data[28][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J2").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[25][0])
+        joint_state_stamped.effort.append(sensor_data[29][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J2")
-        force_torque_comp_stamped.joint_position.append(sensor_data[23][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[24][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[27][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[28][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J2").qacc[0])
 
         # Upper Arm Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[26][0]
-        temp_accel.linear.y = sensor_data[26][1]
-        temp_accel.linear.z = sensor_data[26][2]
+        temp_accel.linear.x = sensor_data[30][0]
+        temp_accel.linear.y = sensor_data[30][1]
+        temp_accel.linear.z = sensor_data[30][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -462,42 +462,42 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[27][0]
-        temp_twist.linear.y = sensor_data[27][1]
-        temp_twist.linear.z = sensor_data[27][2]
+        temp_twist.linear.x = sensor_data[31][0]
+        temp_twist.linear.y = sensor_data[31][1]
+        temp_twist.linear.z = sensor_data[31][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[28][0]
-        temp_twist.angular.y = sensor_data[28][1]
-        temp_twist.angular.z = sensor_data[28][2]
+        temp_twist.angular.x = sensor_data[32][0]
+        temp_twist.angular.y = sensor_data[32][1]
+        temp_twist.angular.z = sensor_data[32][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[29][0]
-        temp_pose.position.y = sensor_data[29][1]
-        temp_pose.position.z = sensor_data[29][2]
-        temp_pose.orientation.w = sensor_data[30][0]
-        temp_pose.orientation.x = sensor_data[30][1]
-        temp_pose.orientation.y = sensor_data[30][2]
-        temp_pose.orientation.z = sensor_data[30][3]
+        temp_pose.position.x = sensor_data[33][0]
+        temp_pose.position.y = sensor_data[33][1]
+        temp_pose.position.z = sensor_data[33][2]
+        temp_pose.orientation.w = sensor_data[34][0]
+        temp_pose.orientation.x = sensor_data[34][1]
+        temp_pose.orientation.y = sensor_data[34][2]
+        temp_pose.orientation.z = sensor_data[34][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J3")
-        joint_state_stamped.position.append(sensor_data[31][0])
-        joint_state_stamped.velocity.append(sensor_data[32][0])
+        joint_state_stamped.position.append(sensor_data[35][0])
+        joint_state_stamped.velocity.append(sensor_data[36][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J3").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[33][0])
+        joint_state_stamped.effort.append(sensor_data[37][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J3")
-        force_torque_comp_stamped.joint_position.append(sensor_data[31][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[32][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[35][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[36][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J3").qacc[0])
 
         # Forearm Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[34][0]
-        temp_accel.linear.y = sensor_data[34][1]
-        temp_accel.linear.z = sensor_data[34][2]
+        temp_accel.linear.x = sensor_data[38][0]
+        temp_accel.linear.y = sensor_data[38][1]
+        temp_accel.linear.z = sensor_data[38][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -508,42 +508,42 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[35][0]
-        temp_twist.linear.y = sensor_data[35][1]
-        temp_twist.linear.z = sensor_data[35][2]
+        temp_twist.linear.x = sensor_data[39][0]
+        temp_twist.linear.y = sensor_data[39][1]
+        temp_twist.linear.z = sensor_data[39][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[36][0]
-        temp_twist.angular.y = sensor_data[36][1]
-        temp_twist.angular.z = sensor_data[36][2]
+        temp_twist.angular.x = sensor_data[40][0]
+        temp_twist.angular.y = sensor_data[40][1]
+        temp_twist.angular.z = sensor_data[40][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[37][0]
-        temp_pose.position.y = sensor_data[37][1]
-        temp_pose.position.z = sensor_data[37][2]
-        temp_pose.orientation.w = sensor_data[38][0]
-        temp_pose.orientation.x = sensor_data[38][1]
-        temp_pose.orientation.y = sensor_data[38][2]
-        temp_pose.orientation.z = sensor_data[38][3]
+        temp_pose.position.x = sensor_data[41][0]
+        temp_pose.position.y = sensor_data[41][1]
+        temp_pose.position.z = sensor_data[41][2]
+        temp_pose.orientation.w = sensor_data[42][0]
+        temp_pose.orientation.x = sensor_data[42][1]
+        temp_pose.orientation.y = sensor_data[42][2]
+        temp_pose.orientation.z = sensor_data[42][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J4")
-        joint_state_stamped.position.append(sensor_data[39][0])
-        joint_state_stamped.velocity.append(sensor_data[40][0])
+        joint_state_stamped.position.append(sensor_data[43][0])
+        joint_state_stamped.velocity.append(sensor_data[44][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J4").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[41][0])
+        joint_state_stamped.effort.append(sensor_data[45][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J4")
-        force_torque_comp_stamped.joint_position.append(sensor_data[39][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[40][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[43][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[44][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J4").qacc[0])
 
         # Wrist Yaw Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[42][0]
-        temp_accel.linear.y = sensor_data[42][1]
-        temp_accel.linear.z = sensor_data[42][2]
+        temp_accel.linear.x = sensor_data[46][0]
+        temp_accel.linear.y = sensor_data[46][1]
+        temp_accel.linear.z = sensor_data[46][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -554,42 +554,42 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[43][0]
-        temp_twist.linear.y = sensor_data[43][1]
-        temp_twist.linear.z = sensor_data[43][2]
+        temp_twist.linear.x = sensor_data[47][0]
+        temp_twist.linear.y = sensor_data[47][1]
+        temp_twist.linear.z = sensor_data[47][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[44][0]
-        temp_twist.angular.y = sensor_data[44][1]
-        temp_twist.angular.z = sensor_data[44][2]
+        temp_twist.angular.x = sensor_data[48][0]
+        temp_twist.angular.y = sensor_data[48][1]
+        temp_twist.angular.z = sensor_data[48][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[45][0]
-        temp_pose.position.y = sensor_data[45][1]
-        temp_pose.position.z = sensor_data[45][2]
-        temp_pose.orientation.w = sensor_data[46][0]
-        temp_pose.orientation.x = sensor_data[46][1]
-        temp_pose.orientation.y = sensor_data[46][2]
-        temp_pose.orientation.z = sensor_data[46][3]
+        temp_pose.position.x = sensor_data[49][0]
+        temp_pose.position.y = sensor_data[49][1]
+        temp_pose.position.z = sensor_data[49][2]
+        temp_pose.orientation.w = sensor_data[50][0]
+        temp_pose.orientation.x = sensor_data[50][1]
+        temp_pose.orientation.y = sensor_data[50][2]
+        temp_pose.orientation.z = sensor_data[50][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J5")
-        joint_state_stamped.position.append(sensor_data[47][0])
-        joint_state_stamped.velocity.append(sensor_data[48][0])
+        joint_state_stamped.position.append(sensor_data[51][0])
+        joint_state_stamped.velocity.append(sensor_data[52][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J5").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[49][0])
+        joint_state_stamped.effort.append(sensor_data[53][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J5")
-        force_torque_comp_stamped.joint_position.append(sensor_data[47][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[48][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[51][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[52][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J5").qacc[0])
 
         # Wrist Pitch Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[50][0]
-        temp_accel.linear.y = sensor_data[50][1]
-        temp_accel.linear.z = sensor_data[50][2]
+        temp_accel.linear.x = sensor_data[54][0]
+        temp_accel.linear.y = sensor_data[54][1]
+        temp_accel.linear.z = sensor_data[54][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -600,42 +600,42 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[51][0]
-        temp_twist.linear.y = sensor_data[51][1]
-        temp_twist.linear.z = sensor_data[51][2]
+        temp_twist.linear.x = sensor_data[55][0]
+        temp_twist.linear.y = sensor_data[55][1]
+        temp_twist.linear.z = sensor_data[55][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[52][0]
-        temp_twist.angular.y = sensor_data[52][1]
-        temp_twist.angular.z = sensor_data[52][2]
+        temp_twist.angular.x = sensor_data[56][0]
+        temp_twist.angular.y = sensor_data[56][1]
+        temp_twist.angular.z = sensor_data[56][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[53][0]
-        temp_pose.position.y = sensor_data[53][1]
-        temp_pose.position.z = sensor_data[53][2]
-        temp_pose.orientation.w = sensor_data[54][0]
-        temp_pose.orientation.x = sensor_data[54][1]
-        temp_pose.orientation.y = sensor_data[54][2]
-        temp_pose.orientation.z = sensor_data[54][3]
+        temp_pose.position.x = sensor_data[57][0]
+        temp_pose.position.y = sensor_data[57][1]
+        temp_pose.position.z = sensor_data[57][2]
+        temp_pose.orientation.w = sensor_data[58][0]
+        temp_pose.orientation.x = sensor_data[58][1]
+        temp_pose.orientation.y = sensor_data[58][2]
+        temp_pose.orientation.z = sensor_data[58][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J6")
-        joint_state_stamped.position.append(sensor_data[55][0])
-        joint_state_stamped.velocity.append(sensor_data[56][0])
+        joint_state_stamped.position.append(sensor_data[59][0])
+        joint_state_stamped.velocity.append(sensor_data[60][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J6").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[57][0])
+        joint_state_stamped.effort.append(sensor_data[61][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J6")
-        force_torque_comp_stamped.joint_position.append(sensor_data[55][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[56][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[59][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[60][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J6").qacc[0])
 
         # Wrist Palm Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[58][0]
-        temp_accel.linear.y = sensor_data[58][1]
-        temp_accel.linear.z = sensor_data[58][2]
+        temp_accel.linear.x = sensor_data[62][0]
+        temp_accel.linear.y = sensor_data[62][1]
+        temp_accel.linear.z = sensor_data[62][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -646,57 +646,57 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[59][0]
-        temp_twist.linear.y = sensor_data[59][1]
-        temp_twist.linear.z = sensor_data[59][2]
+        temp_twist.linear.x = sensor_data[63][0]
+        temp_twist.linear.y = sensor_data[63][1]
+        temp_twist.linear.z = sensor_data[63][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[60][0]
-        temp_twist.angular.y = sensor_data[60][1]
-        temp_twist.angular.z = sensor_data[60][2]
+        temp_twist.angular.x = sensor_data[64][0]
+        temp_twist.angular.y = sensor_data[64][1]
+        temp_twist.angular.z = sensor_data[64][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[61][0]
-        temp_pose.position.y = sensor_data[61][1]
-        temp_pose.position.z = sensor_data[61][2]
-        temp_pose.orientation.w = sensor_data[62][0]
-        temp_pose.orientation.x = sensor_data[62][1]
-        temp_pose.orientation.y = sensor_data[62][2]
-        temp_pose.orientation.z = sensor_data[62][3]
+        temp_pose.position.x = sensor_data[65][0]
+        temp_pose.position.y = sensor_data[65][1]
+        temp_pose.position.z = sensor_data[65][2]
+        temp_pose.orientation.w = sensor_data[66][0]
+        temp_pose.orientation.x = sensor_data[66][1]
+        temp_pose.orientation.y = sensor_data[66][2]
+        temp_pose.orientation.z = sensor_data[66][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("wam/J7")
-        joint_state_stamped.position.append(sensor_data[63][0])
-        joint_state_stamped.velocity.append(sensor_data[64][0])
+        joint_state_stamped.position.append(sensor_data[67][0])
+        joint_state_stamped.velocity.append(sensor_data[68][0])
         joint_state_stamped.acceleration.append(self.data.joint("wam/J7").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[65][0])
+        joint_state_stamped.effort.append(sensor_data[69][0])
 
         force_torque_comp_stamped.joint_name.append("wam/J7")
-        force_torque_comp_stamped.joint_position.append(sensor_data[63][0])
-        force_torque_comp_stamped.joint_velocity.append(sensor_data[64][0])
+        force_torque_comp_stamped.joint_position.append(sensor_data[67][0])
+        force_torque_comp_stamped.joint_velocity.append(sensor_data[68][0])
         force_torque_comp_stamped.joint_acceleration.append(self.data.joint("wam/J7").qacc[0])
 
         # Force Torque Sensor
-        force_torque_state_stamped.wrench.force.x = sensor_data[66][0]
-        force_torque_state_stamped.wrench.force.y = sensor_data[66][1]
-        force_torque_state_stamped.wrench.force.z = sensor_data[66][2]
-        force_torque_state_stamped.wrench.torque.x = sensor_data[67][0]
-        force_torque_state_stamped.wrench.torque.y = sensor_data[67][1]
-        force_torque_state_stamped.wrench.torque.z = sensor_data[67][2]
+        force_torque_state_stamped.wrench.force.x = sensor_data[70][0]
+        force_torque_state_stamped.wrench.force.y = sensor_data[70][1]
+        force_torque_state_stamped.wrench.force.z = sensor_data[70][2]
+        force_torque_state_stamped.wrench.torque.x = sensor_data[71][0]
+        force_torque_state_stamped.wrench.torque.y = sensor_data[71][1]
+        force_torque_state_stamped.wrench.torque.z = sensor_data[71][2]
 
-        force_torque_comp_stamped.ft_sensor_wrench.force.x = sensor_data[66][0]
-        force_torque_comp_stamped.ft_sensor_wrench.force.y = sensor_data[66][1]
-        force_torque_comp_stamped.ft_sensor_wrench.force.z = sensor_data[66][2]
-        force_torque_comp_stamped.ft_sensor_wrench.torque.x = sensor_data[67][0]
-        force_torque_comp_stamped.ft_sensor_wrench.torque.y = sensor_data[67][1]
-        force_torque_comp_stamped.ft_sensor_wrench.torque.z = sensor_data[67][2]
+        force_torque_comp_stamped.ft_sensor_wrench.force.x = sensor_data[70][0]
+        force_torque_comp_stamped.ft_sensor_wrench.force.y = sensor_data[70][1]
+        force_torque_comp_stamped.ft_sensor_wrench.force.z = sensor_data[70][2]
+        force_torque_comp_stamped.ft_sensor_wrench.torque.x = sensor_data[71][0]
+        force_torque_comp_stamped.ft_sensor_wrench.torque.y = sensor_data[71][1]
+        force_torque_comp_stamped.ft_sensor_wrench.torque.z = sensor_data[71][2]
 
         # BHand Palm Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[68][0]
-        temp_accel.linear.y = sensor_data[68][1]
-        temp_accel.linear.z = sensor_data[68][2]
+        temp_accel.linear.x = sensor_data[72][0]
+        temp_accel.linear.y = sensor_data[72][1]
+        temp_accel.linear.z = sensor_data[72][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -707,31 +707,31 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[69][0]
-        temp_twist.linear.y = sensor_data[69][1]
-        temp_twist.linear.z = sensor_data[69][2]
+        temp_twist.linear.x = sensor_data[73][0]
+        temp_twist.linear.y = sensor_data[73][1]
+        temp_twist.linear.z = sensor_data[73][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[70][0]
-        temp_twist.angular.y = sensor_data[70][1]
-        temp_twist.angular.z = sensor_data[70][2]
+        temp_twist.angular.x = sensor_data[74][0]
+        temp_twist.angular.y = sensor_data[74][1]
+        temp_twist.angular.z = sensor_data[74][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[71][0]
-        temp_pose.position.y = sensor_data[71][1]
-        temp_pose.position.z = sensor_data[71][2]
-        temp_pose.orientation.w = sensor_data[72][0]
-        temp_pose.orientation.x = sensor_data[72][1]
-        temp_pose.orientation.y = sensor_data[72][2]
-        temp_pose.orientation.z = sensor_data[72][3]
+        temp_pose.position.x = sensor_data[75][0]
+        temp_pose.position.y = sensor_data[75][1]
+        temp_pose.position.z = sensor_data[75][2]
+        temp_pose.orientation.w = sensor_data[76][0]
+        temp_pose.orientation.x = sensor_data[76][1]
+        temp_pose.orientation.y = sensor_data[76][2]
+        temp_pose.orientation.z = sensor_data[76][3]
         link_state_stamped.pose.append(temp_pose)
 
         # BHand Finger 1 Prox Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[73][0]
-        temp_accel.linear.y = sensor_data[73][1]
-        temp_accel.linear.z = sensor_data[73][2]
+        temp_accel.linear.x = sensor_data[77][0]
+        temp_accel.linear.y = sensor_data[77][1]
+        temp_accel.linear.z = sensor_data[77][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -742,37 +742,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[74][0]
-        temp_twist.linear.y = sensor_data[74][1]
-        temp_twist.linear.z = sensor_data[74][2]
+        temp_twist.linear.x = sensor_data[78][0]
+        temp_twist.linear.y = sensor_data[78][1]
+        temp_twist.linear.z = sensor_data[78][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[75][0]
-        temp_twist.angular.y = sensor_data[75][1]
-        temp_twist.angular.z = sensor_data[75][2]
+        temp_twist.angular.x = sensor_data[79][0]
+        temp_twist.angular.y = sensor_data[79][1]
+        temp_twist.angular.z = sensor_data[79][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[76][0]
-        temp_pose.position.y = sensor_data[76][1]
-        temp_pose.position.z = sensor_data[76][2]
-        temp_pose.orientation.w = sensor_data[77][0]
-        temp_pose.orientation.x = sensor_data[77][1]
-        temp_pose.orientation.y = sensor_data[77][2]
-        temp_pose.orientation.z = sensor_data[77][3]
+        temp_pose.position.x = sensor_data[80][0]
+        temp_pose.position.y = sensor_data[80][1]
+        temp_pose.position.z = sensor_data[80][2]
+        temp_pose.orientation.w = sensor_data[81][0]
+        temp_pose.orientation.x = sensor_data[81][1]
+        temp_pose.orientation.y = sensor_data[81][2]
+        temp_pose.orientation.z = sensor_data[81][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f1/prox")
-        joint_state_stamped.position.append(sensor_data[78][0])
-        joint_state_stamped.velocity.append(sensor_data[79][0])
+        joint_state_stamped.position.append(sensor_data[82][0])
+        joint_state_stamped.velocity.append(sensor_data[83][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f1/prox").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[80][0])
+        joint_state_stamped.effort.append(sensor_data[84][0])
 
         # BHand Finger 1 Med Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[81][0]
-        temp_accel.linear.y = sensor_data[81][1]
-        temp_accel.linear.z = sensor_data[81][2]
+        temp_accel.linear.x = sensor_data[85][0]
+        temp_accel.linear.y = sensor_data[85][1]
+        temp_accel.linear.z = sensor_data[85][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -783,37 +783,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[82][0]
-        temp_twist.linear.y = sensor_data[82][1]
-        temp_twist.linear.z = sensor_data[82][2]
+        temp_twist.linear.x = sensor_data[86][0]
+        temp_twist.linear.y = sensor_data[86][1]
+        temp_twist.linear.z = sensor_data[86][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[83][0]
-        temp_twist.angular.y = sensor_data[83][1]
-        temp_twist.angular.z = sensor_data[83][2]
+        temp_twist.angular.x = sensor_data[87][0]
+        temp_twist.angular.y = sensor_data[87][1]
+        temp_twist.angular.z = sensor_data[87][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[84][0]
-        temp_pose.position.y = sensor_data[84][1]
-        temp_pose.position.z = sensor_data[84][2]
-        temp_pose.orientation.w = sensor_data[85][0]
-        temp_pose.orientation.x = sensor_data[85][1]
-        temp_pose.orientation.y = sensor_data[85][2]
-        temp_pose.orientation.z = sensor_data[85][3]
+        temp_pose.position.x = sensor_data[88][0]
+        temp_pose.position.y = sensor_data[88][1]
+        temp_pose.position.z = sensor_data[88][2]
+        temp_pose.orientation.w = sensor_data[89][0]
+        temp_pose.orientation.x = sensor_data[89][1]
+        temp_pose.orientation.y = sensor_data[89][2]
+        temp_pose.orientation.z = sensor_data[89][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f1/med")
-        joint_state_stamped.position.append(sensor_data[86][0])
-        joint_state_stamped.velocity.append(sensor_data[87][0])
+        joint_state_stamped.position.append(sensor_data[90][0])
+        joint_state_stamped.velocity.append(sensor_data[91][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f1/med").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[88][0])
+        joint_state_stamped.effort.append(sensor_data[92][0])
 
         # BHand Finger 1 Dist Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[89][0]
-        temp_accel.linear.y = sensor_data[89][1]
-        temp_accel.linear.z = sensor_data[89][2]
+        temp_accel.linear.x = sensor_data[93][0]
+        temp_accel.linear.y = sensor_data[93][1]
+        temp_accel.linear.z = sensor_data[93][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -824,37 +824,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[90][0]
-        temp_twist.linear.y = sensor_data[90][1]
-        temp_twist.linear.z = sensor_data[90][2]
+        temp_twist.linear.x = sensor_data[94][0]
+        temp_twist.linear.y = sensor_data[94][1]
+        temp_twist.linear.z = sensor_data[94][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[91][0]
-        temp_twist.angular.y = sensor_data[91][1]
-        temp_twist.angular.z = sensor_data[91][2]
+        temp_twist.angular.x = sensor_data[95][0]
+        temp_twist.angular.y = sensor_data[95][1]
+        temp_twist.angular.z = sensor_data[95][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[92][0]
-        temp_pose.position.y = sensor_data[92][1]
-        temp_pose.position.z = sensor_data[92][2]
-        temp_pose.orientation.w = sensor_data[93][0]
-        temp_pose.orientation.x = sensor_data[93][1]
-        temp_pose.orientation.y = sensor_data[93][2]
-        temp_pose.orientation.z = sensor_data[93][3]
+        temp_pose.position.x = sensor_data[96][0]
+        temp_pose.position.y = sensor_data[96][1]
+        temp_pose.position.z = sensor_data[96][2]
+        temp_pose.orientation.w = sensor_data[97][0]
+        temp_pose.orientation.x = sensor_data[97][1]
+        temp_pose.orientation.y = sensor_data[97][2]
+        temp_pose.orientation.z = sensor_data[97][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f1/dist")
-        joint_state_stamped.position.append(sensor_data[94][0])
-        joint_state_stamped.velocity.append(sensor_data[95][0])
+        joint_state_stamped.position.append(sensor_data[98][0])
+        joint_state_stamped.velocity.append(sensor_data[99][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f1/dist").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[96][0])
+        joint_state_stamped.effort.append(sensor_data[100][0])
 
         # BHand Finger 2 Prox Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[97][0]
-        temp_accel.linear.y = sensor_data[97][1]
-        temp_accel.linear.z = sensor_data[97][2]
+        temp_accel.linear.x = sensor_data[101][0]
+        temp_accel.linear.y = sensor_data[101][1]
+        temp_accel.linear.z = sensor_data[101][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -865,37 +865,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[98][0]
-        temp_twist.linear.y = sensor_data[98][1]
-        temp_twist.linear.z = sensor_data[98][2]
+        temp_twist.linear.x = sensor_data[102][0]
+        temp_twist.linear.y = sensor_data[102][1]
+        temp_twist.linear.z = sensor_data[102][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[99][0]
-        temp_twist.angular.y = sensor_data[99][1]
-        temp_twist.angular.z = sensor_data[99][2]
+        temp_twist.angular.x = sensor_data[103][0]
+        temp_twist.angular.y = sensor_data[103][1]
+        temp_twist.angular.z = sensor_data[103][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[100][0]
-        temp_pose.position.y = sensor_data[100][1]
-        temp_pose.position.z = sensor_data[100][2]
-        temp_pose.orientation.w = sensor_data[101][0]
-        temp_pose.orientation.x = sensor_data[101][1]
-        temp_pose.orientation.y = sensor_data[101][2]
-        temp_pose.orientation.z = sensor_data[101][3]
+        temp_pose.position.x = sensor_data[104][0]
+        temp_pose.position.y = sensor_data[104][1]
+        temp_pose.position.z = sensor_data[104][2]
+        temp_pose.orientation.w = sensor_data[105][0]
+        temp_pose.orientation.x = sensor_data[105][1]
+        temp_pose.orientation.y = sensor_data[105][2]
+        temp_pose.orientation.z = sensor_data[105][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f2/prox")
-        joint_state_stamped.position.append(sensor_data[102][0])
-        joint_state_stamped.velocity.append(sensor_data[103][0])
+        joint_state_stamped.position.append(sensor_data[106][0])
+        joint_state_stamped.velocity.append(sensor_data[107][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f2/prox").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[104][0])
+        joint_state_stamped.effort.append(sensor_data[108][0])
 
         # BHand Finger 2 Med Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[105][0]
-        temp_accel.linear.y = sensor_data[105][1]
-        temp_accel.linear.z = sensor_data[105][2]
+        temp_accel.linear.x = sensor_data[109][0]
+        temp_accel.linear.y = sensor_data[109][1]
+        temp_accel.linear.z = sensor_data[109][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -906,37 +906,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[106][0]
-        temp_twist.linear.y = sensor_data[106][1]
-        temp_twist.linear.z = sensor_data[106][2]
+        temp_twist.linear.x = sensor_data[110][0]
+        temp_twist.linear.y = sensor_data[110][1]
+        temp_twist.linear.z = sensor_data[110][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[107][0]
-        temp_twist.angular.y = sensor_data[107][1]
-        temp_twist.angular.z = sensor_data[107][2]
+        temp_twist.angular.x = sensor_data[111][0]
+        temp_twist.angular.y = sensor_data[111][1]
+        temp_twist.angular.z = sensor_data[111][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[108][0]
-        temp_pose.position.y = sensor_data[108][1]
-        temp_pose.position.z = sensor_data[108][2]
-        temp_pose.orientation.w = sensor_data[109][0]
-        temp_pose.orientation.x = sensor_data[109][1]
-        temp_pose.orientation.y = sensor_data[109][2]
-        temp_pose.orientation.z = sensor_data[109][3]
+        temp_pose.position.x = sensor_data[112][0]
+        temp_pose.position.y = sensor_data[112][1]
+        temp_pose.position.z = sensor_data[112][2]
+        temp_pose.orientation.w = sensor_data[113][0]
+        temp_pose.orientation.x = sensor_data[113][1]
+        temp_pose.orientation.y = sensor_data[113][2]
+        temp_pose.orientation.z = sensor_data[113][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f2/med")
-        joint_state_stamped.position.append(sensor_data[110][0])
-        joint_state_stamped.velocity.append(sensor_data[111][0])
+        joint_state_stamped.position.append(sensor_data[114][0])
+        joint_state_stamped.velocity.append(sensor_data[115][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f2/med").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[112][0])
+        joint_state_stamped.effort.append(sensor_data[116][0])
 
         # BHand Finger 2 Dist Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[113][0]
-        temp_accel.linear.y = sensor_data[113][1]
-        temp_accel.linear.z = sensor_data[113][2]
+        temp_accel.linear.x = sensor_data[117][0]
+        temp_accel.linear.y = sensor_data[117][1]
+        temp_accel.linear.z = sensor_data[117][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -947,37 +947,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[114][0]
-        temp_twist.linear.y = sensor_data[114][1]
-        temp_twist.linear.z = sensor_data[114][2]
+        temp_twist.linear.x = sensor_data[118][0]
+        temp_twist.linear.y = sensor_data[118][1]
+        temp_twist.linear.z = sensor_data[118][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[115][0]
-        temp_twist.angular.y = sensor_data[115][1]
-        temp_twist.angular.z = sensor_data[115][2]
+        temp_twist.angular.x = sensor_data[119][0]
+        temp_twist.angular.y = sensor_data[119][1]
+        temp_twist.angular.z = sensor_data[119][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[116][0]
-        temp_pose.position.y = sensor_data[116][1]
-        temp_pose.position.z = sensor_data[116][2]
-        temp_pose.orientation.w = sensor_data[117][0]
-        temp_pose.orientation.x = sensor_data[117][1]
-        temp_pose.orientation.y = sensor_data[117][2]
-        temp_pose.orientation.z = sensor_data[117][3]
+        temp_pose.position.x = sensor_data[120][0]
+        temp_pose.position.y = sensor_data[120][1]
+        temp_pose.position.z = sensor_data[120][2]
+        temp_pose.orientation.w = sensor_data[121][0]
+        temp_pose.orientation.x = sensor_data[121][1]
+        temp_pose.orientation.y = sensor_data[121][2]
+        temp_pose.orientation.z = sensor_data[121][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f2/dist")
-        joint_state_stamped.position.append(sensor_data[118][0])
-        joint_state_stamped.velocity.append(sensor_data[119][0])
+        joint_state_stamped.position.append(sensor_data[122][0])
+        joint_state_stamped.velocity.append(sensor_data[123][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f2/dist").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[120][0])
+        joint_state_stamped.effort.append(sensor_data[124][0])
 
         # BHand Finger 3 Med Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[121][0]
-        temp_accel.linear.y = sensor_data[121][1]
-        temp_accel.linear.z = sensor_data[121][2]
+        temp_accel.linear.x = sensor_data[125][0]
+        temp_accel.linear.y = sensor_data[125][1]
+        temp_accel.linear.z = sensor_data[125][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -988,37 +988,37 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[122][0]
-        temp_twist.linear.y = sensor_data[122][1]
-        temp_twist.linear.z = sensor_data[122][2]
+        temp_twist.linear.x = sensor_data[126][0]
+        temp_twist.linear.y = sensor_data[126][1]
+        temp_twist.linear.z = sensor_data[126][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[123][0]
-        temp_twist.angular.y = sensor_data[123][1]
-        temp_twist.angular.z = sensor_data[123][2]
+        temp_twist.angular.x = sensor_data[127][0]
+        temp_twist.angular.y = sensor_data[127][1]
+        temp_twist.angular.z = sensor_data[127][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[124][0]
-        temp_pose.position.y = sensor_data[124][1]
-        temp_pose.position.z = sensor_data[124][2]
-        temp_pose.orientation.w = sensor_data[125][0]
-        temp_pose.orientation.x = sensor_data[125][1]
-        temp_pose.orientation.y = sensor_data[125][2]
-        temp_pose.orientation.z = sensor_data[125][3]
+        temp_pose.position.x = sensor_data[128][0]
+        temp_pose.position.y = sensor_data[128][1]
+        temp_pose.position.z = sensor_data[128][2]
+        temp_pose.orientation.w = sensor_data[129][0]
+        temp_pose.orientation.x = sensor_data[129][1]
+        temp_pose.orientation.y = sensor_data[129][2]
+        temp_pose.orientation.z = sensor_data[129][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f3/med")
-        joint_state_stamped.position.append(sensor_data[126][0])
-        joint_state_stamped.velocity.append(sensor_data[127][0])
+        joint_state_stamped.position.append(sensor_data[130][0])
+        joint_state_stamped.velocity.append(sensor_data[131][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f3/med").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[128][0])
+        joint_state_stamped.effort.append(sensor_data[132][0])
 
         # BHand Finger 3 Dist Link
         # Linear acceleration
         temp_accel = Accel()
-        temp_accel.linear.x = sensor_data[129][0]
-        temp_accel.linear.y = sensor_data[129][1]
-        temp_accel.linear.z = sensor_data[129][2]
+        temp_accel.linear.x = sensor_data[133][0]
+        temp_accel.linear.y = sensor_data[133][1]
+        temp_accel.linear.z = sensor_data[133][2]
         # Angular acceleration
         temp_accel.angular.x = 0
         temp_accel.angular.y = 0
@@ -1029,72 +1029,72 @@ class StatePublisherMujoco(object):
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[130][0]
-        temp_twist.linear.y = sensor_data[130][1]
-        temp_twist.linear.z = sensor_data[130][2]
+        temp_twist.linear.x = sensor_data[134][0]
+        temp_twist.linear.y = sensor_data[134][1]
+        temp_twist.linear.z = sensor_data[134][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[131][0]
-        temp_twist.angular.y = sensor_data[131][1]
-        temp_twist.angular.z = sensor_data[131][2]
+        temp_twist.angular.x = sensor_data[135][0]
+        temp_twist.angular.y = sensor_data[135][1]
+        temp_twist.angular.z = sensor_data[135][2]
         link_state_stamped.twist.append(temp_twist)
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[132][0]
-        temp_pose.position.y = sensor_data[132][1]
-        temp_pose.position.z = sensor_data[132][2]
-        temp_pose.orientation.w = sensor_data[133][0]
-        temp_pose.orientation.x = sensor_data[133][1]
-        temp_pose.orientation.y = sensor_data[133][2]
-        temp_pose.orientation.z = sensor_data[133][3]
+        temp_pose.position.x = sensor_data[136][0]
+        temp_pose.position.y = sensor_data[136][1]
+        temp_pose.position.z = sensor_data[136][2]
+        temp_pose.orientation.w = sensor_data[137][0]
+        temp_pose.orientation.x = sensor_data[137][1]
+        temp_pose.orientation.y = sensor_data[137][2]
+        temp_pose.orientation.z = sensor_data[137][3]
         link_state_stamped.pose.append(temp_pose)
         # Joint state
         joint_state_stamped.name.append("bhand/f3/dist")
-        joint_state_stamped.position.append(sensor_data[134][0])
-        joint_state_stamped.velocity.append(sensor_data[135][0])
+        joint_state_stamped.position.append(sensor_data[138][0])
+        joint_state_stamped.velocity.append(sensor_data[139][0])
         joint_state_stamped.acceleration.append(self.data.joint("bhand/f3/dist").qacc[0])
-        joint_state_stamped.effort.append(sensor_data[136][0])
+        joint_state_stamped.effort.append(sensor_data[140][0])
 
         # Cart
         # Linear acceleration
         temp_accel_1 = Accel()
-        temp_accel_1.linear.x = sensor_data[137][0]
-        temp_accel_1.linear.y = sensor_data[137][1]
-        temp_accel_1.linear.z = sensor_data[137][2]
+        temp_accel_1.linear.x = sensor_data[141][0]
+        temp_accel_1.linear.y = sensor_data[141][1]
+        temp_accel_1.linear.z = sensor_data[141][2]
         # Angular acceleration
         temp_accel_1.angular.x = 0
         temp_accel_1.angular.y = 0
-        temp_accel_1.angular.z = (sensor_data[138][1]-sensor_data[137][1])/0.1
+        temp_accel_1.angular.z = (sensor_data[142][1]-sensor_data[141][1])/0.1
         force_torque_comp_stamped.cart_accel_1 = temp_accel_1
         # Linear acceleration
         temp_accel_2 = Accel()
-        temp_accel_2.linear.x = sensor_data[138][0]
-        temp_accel_2.linear.y = sensor_data[138][1]
-        temp_accel_2.linear.z = sensor_data[138][2]
+        temp_accel_2.linear.x = sensor_data[142][0]
+        temp_accel_2.linear.y = sensor_data[142][1]
+        temp_accel_2.linear.z = sensor_data[142][2]
         # Angular acceleration
         temp_accel_2.angular.x = 0
         temp_accel_2.angular.y = 0
-        temp_accel_2.angular.z = (sensor_data[138][1]-sensor_data[137][1])/0.1
+        temp_accel_2.angular.z = (sensor_data[142][1]-sensor_data[141][1])/0.1
         force_torque_comp_stamped.cart_accel_2 = temp_accel_2
         # Twist
         temp_twist = Twist()
         # Linear component
-        temp_twist.linear.x = sensor_data[139][0]
-        temp_twist.linear.y = sensor_data[139][1]
-        temp_twist.linear.z = sensor_data[139][2]
+        temp_twist.linear.x = sensor_data[143][0]
+        temp_twist.linear.y = sensor_data[143][1]
+        temp_twist.linear.z = sensor_data[143][2]
         # Angular component
-        temp_twist.angular.x = sensor_data[140][0]
-        temp_twist.angular.y = sensor_data[140][1]
-        temp_twist.angular.z = sensor_data[140][2]
+        temp_twist.angular.x = sensor_data[144][0]
+        temp_twist.angular.y = sensor_data[144][1]
+        temp_twist.angular.z = sensor_data[144][2]
         force_torque_comp_stamped.cart_twist = temp_twist
         # Link pose
         temp_pose = Pose()
-        temp_pose.position.x = sensor_data[141][0]
-        temp_pose.position.y = sensor_data[141][1]
-        temp_pose.position.z = sensor_data[141][2]
-        temp_pose.orientation.w = sensor_data[142][0]
-        temp_pose.orientation.x = sensor_data[142][1]
-        temp_pose.orientation.y = sensor_data[142][2]
-        temp_pose.orientation.z = sensor_data[142][3]
+        temp_pose.position.x = sensor_data[145][0]
+        temp_pose.position.y = sensor_data[145][1]
+        temp_pose.position.z = sensor_data[145][2]
+        temp_pose.orientation.w = sensor_data[146][0]
+        temp_pose.orientation.x = sensor_data[146][1]
+        temp_pose.orientation.y = sensor_data[146][2]
+        temp_pose.orientation.z = sensor_data[146][3]
         force_torque_comp_stamped.cart_pose = temp_pose
 
         # Publish Link-states
