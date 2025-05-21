@@ -53,7 +53,7 @@ class ControlCommand(object):
         self.I_whl_smt = np.zeros((4,1))
 
         # Record MB PID contribution
-        self.pub_base_velocity = rospy.Publisher(
+        self.mb_pid_contri = rospy.Publisher(
             '/mb_pid_contri',
             MB_pid_effort,
             queue_size=1
@@ -153,13 +153,15 @@ class ControlCommand(object):
         P_y = e_y*Kp[1]
         P_theta = e_theta*Kp[2]
 
-        self.I_x += Ki[0]*e_x*(t-self.last_time_theta+0.0001)
-        self.I_y += Ki[1]*e_y*(t-self.last_time_theta+0.0001)
-        self.I_theta += Ki[2]*e_theta*(t-self.last_time_theta+0.0001)
+        delta_t = t-self.last_time_theta+0.0001
 
-        D_x = Kd[0]*(e_x-self.e_x_last)/(t-self.last_time_theta+0.0001)
-        D_y = Kd[1]*(e_y-self.e_y_last)/(t-self.last_time_theta+0.0001)
-        D_theta = Kd[2]*(e_theta-self.e_theta_last)/(t-self.last_time_theta+0.0001)
+        self.I_x += Ki[0]*e_x*delta_t
+        self.I_y += Ki[1]*e_y*delta_t
+        self.I_theta += Ki[2]*e_theta*delta_t
+
+        D_x = Kd[0]*(e_x-self.e_x_last)/delta_t
+        D_y = Kd[1]*(e_y-self.e_y_last)/delta_t
+        D_theta = Kd[2]*(e_theta-self.e_theta_last)/delta_t
 
         self.e_x_last = e_x
         self.e_y_last = e_y
@@ -203,6 +205,9 @@ class ControlCommand(object):
         mb_pid_effort_obj.d_contribution.append(D_x)
         mb_pid_effort_obj.d_contribution.append(D_y)
         mb_pid_effort_obj.d_contribution.append(D_theta)
+
+        # Publish the qp inputs
+        self.mb_pid_contri.publish(mb_pid_effort_obj)
 
         self.mb_pid_seq_ind +=1
     
