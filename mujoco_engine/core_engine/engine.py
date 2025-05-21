@@ -284,9 +284,14 @@ class Mujoco_Engine:
         # Set control commands by simple PID control defined in "control_commands.py"
         # For Summit
         if (self._robot_list[0]):
-            self.summit_control_commands.velx_PID(25.0, 0.3, 1.3, self.summit_currentx_vel,self.summit_base_name)   
-            self.summit_control_commands.vely_PID(25.0, 0.3, 1.3, self.summit_currenty_vel,self.summit_base_name)
-            self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta_vel,self.summit_base_name)
+            # self.summit_control_commands.velx_PID(25.0, 0.3, 0.01, self.summit_currentx_vel,self.summit_base_name)   
+            # self.summit_control_commands.vely_PID(25.0, 0.3, 0.01, self.summit_currenty_vel,self.summit_base_name)
+            # self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta_vel,self.summit_base_name)
+            self.summit_control_commands.vel_PID([25.0,25.0,12.0], 
+                                                 [0.3,0.3,0.3], 
+                                                 [0.01,0.01,0.3], 
+                                                 [self.summit_currentx_vel,self.summit_currenty_vel,self.summit_currenttheta_vel],
+                                                 self.summit_base_name)   
             self.summit_control_commands.wheel_PID(20, 0.3, 0.01, self.summit_current_whl_vel,self.summit_base_name)
 
         # For Fetch
