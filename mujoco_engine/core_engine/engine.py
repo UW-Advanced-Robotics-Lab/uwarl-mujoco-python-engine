@@ -289,7 +289,7 @@ class Mujoco_Engine:
             # self.summit_control_commands.veltheta_PID(12.0, 0.3, 0.3, self.summit_currenttheta_vel,self.summit_base_name)
             self.summit_control_commands.vel_PID([25.0,25.0,12.0], 
                                                  [0.3,0.3,0.3], 
-                                                 [0.01,0.01,0.3], 
+                                                 [0.1,0.1,0.3], 
                                                  [self.summit_currentx_vel,self.summit_currenty_vel,self.summit_currenttheta_vel],
                                                  self.summit_base_name)   
             self.summit_control_commands.wheel_PID(20, 0.3, 0.01, self.summit_current_whl_vel,self.summit_base_name)
