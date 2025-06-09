@@ -171,7 +171,7 @@ class Mujoco_Engine:
                                             10, (self.width,self.h_min))
         self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
                                               cv2.VideoWriter_fourcc(*'MJPG'), 
-                                              10, (1920,1080))
+                                              10, (1280,720))
 
         
     #==================================#
@@ -198,7 +198,7 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
-    def _update(self, if_camera_preview=False
+    def _update(self, if_camera_preview=True
                     , if_viewport_preview=True):
 
         # Get current velocity of base for PID control
@@ -331,10 +331,14 @@ class Mujoco_Engine:
             if if_viewport_preview:
                 # - capture view:
                 viewport_data = self.mj_viewer.acquire_viewport_frames_safe()
-                if(viewport_data["frame_buffer"] == []):
+                if( not (viewport_data["frame_buffer"] == [])):
+                    # image = viewport_data["frame_buffer"]
+                    # np.reshape(image, (-1,1))
+                    # std_dev=np.std(image)
+                    # print(std_dev)
                     img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
                     # img = cv2.flip(img, 0)
-                    # img = cv2.resize(img, (1280, 720))
+                    img = cv2.resize(img, (1280, 720))
                     self.viewport_video.write(img)
                     cv2.waitKey(int(1000/self._rate_Hz))
 
