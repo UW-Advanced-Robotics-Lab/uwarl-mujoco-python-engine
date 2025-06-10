@@ -24,6 +24,7 @@ import numpy as np
 import mujoco
 import cv2
 import imageio
+from cv_bridge import CvBridge, CvBridgeError
 
 import rospy
 
@@ -105,6 +106,8 @@ class Mujoco_Engine:
 
         # Create publishers to publish camera view
         self.pub_rear_cam = rospy.Publisher('/mujoco/camera',Image,queue_size=1)
+        # To convert open  CV images to an ecoding that can be passed to ros message image.
+        self.bridge = CvBridge()
 
         # Calculate rendering freq
         self.steps_per_render = round(float(self._rate_Hz)/float(self._rate_scene))
@@ -355,14 +358,6 @@ class Mujoco_Engine:
                 # - capture view:
                 camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
 
-                # Camera object
-                rear_cam = Image()
-                rear_cam.header.frame_id = "rear"
-                # Current time
-                curr_time = rospy.Time.now()
-                rear_cam.header.stamp = curr_time
-                rear_cam.height = 720
-                rear_cam.width = 1280
                 # render captured views on cv2      
                 cv2_capture_window = []
                 for camera_buf, frame_time_stamp in zip(camera_sensor_data["frame_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
@@ -388,7 +383,12 @@ class Mujoco_Engine:
                 cv2.imshow("camera views",hoz_cat_img)
                 self.camera_video.write(hoz_cat_img)
 
-                rear_cam.data = hoz_cat_img.reshape(-1)
+                
+                rear_cam = self.bridge.cv2_to_imgmsg(hoz_cat_img, "bgr8")
+                rear_cam.header.frame_id = "rear"
+                # Current time
+                curr_time = rospy.Time.now()
+                rear_cam.header.stamp = curr_time
                 self.pub_rear_cam.publish(rear_cam)
 
                 cv2.waitKey(int(1000/self._rate_Hz))
