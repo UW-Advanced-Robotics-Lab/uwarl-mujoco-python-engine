@@ -41,6 +41,7 @@ from mujoco_engine.core_engine.effort_control_commands import EffortControlComma
 from scipy.spatial.transform import Rotation as R
 
 from std_msgs.msg import Float64
+from sensor_msgs.msg import Image
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -101,6 +102,9 @@ class Mujoco_Engine:
         self._write_to = write_to
         # Which robot joints and bodies should be published
         self._robot_list = robot_list
+
+        # Create publishers to publish camera view
+        self.pub_rear_cam = rospy.Publisher('/mujoco/camera',Image,queue_size=1)
 
         # Calculate rendering freq
         self.steps_per_render = round(float(self._rate_Hz)/float(self._rate_scene))
@@ -350,6 +354,15 @@ class Mujoco_Engine:
 
                 # - capture view:
                 camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
+
+                # Camera object
+                rear_cam = Image()
+                rear_cam.header.frame_id = "rear"
+                # Current time
+                curr_time = rospy.Time.now()
+                rear_cam.header.stamp = curr_time
+                rear_cam.height = 720
+                rear_cam.width = 1280
                 # render captured views on cv2      
                 cv2_capture_window = []
                 for camera_buf, frame_time_stamp in zip(camera_sensor_data["frame_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
@@ -371,8 +384,13 @@ class Mujoco_Engine:
                 #             "{}/{}_{}_gray.png".format(self._write_to, camera_depth_buf[0].replace("/", "_"), frame_time_stamp[1]), 
                 #             uint_8_img
                 #         )
-                cv2.imshow("camera views", cv2.hconcat(cv2_capture_window))
-                self.camera_video.write(cv2.hconcat(cv2_capture_window))
+                hoz_cat_img = cv2.hconcat(cv2_capture_window)
+                cv2.imshow("camera views",hoz_cat_img)
+                self.camera_video.write(hoz_cat_img)
+
+                rear_cam.data = hoz_cat_img.reshape(-1)
+                self.pub_rear_cam.publish(rear_cam)
+
                 cv2.waitKey(int(1000/self._rate_Hz))
 
         self.i-=1
