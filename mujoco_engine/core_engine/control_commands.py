@@ -85,6 +85,10 @@ class ControlCommand(object):
         self.last_time_x = t
 
         control = P+self.I_x+D
+        # if(base_name == "fetch"):
+        #     print("Fetch X-vel CP: "+ str(CP))
+        #     print("Fetch X-vel SP: "+ str(SP))
+        #     print("Fetch X-Force: "+ str(control))
 
         # Set control commands in mj_data
         self.mj_data_control.actuator(base_name+'/pose/x').ctrl = control
@@ -107,6 +111,8 @@ class ControlCommand(object):
         self.last_time_y = t
 
         control = P+self.I_y+D
+        # if(base_name == "fetch"):
+        #     print("Fetch Y-vel: "+ str(control))
 
         # Set control commands in mj_data
         self.mj_data_control.actuator(base_name+'/pose/y').ctrl = control
