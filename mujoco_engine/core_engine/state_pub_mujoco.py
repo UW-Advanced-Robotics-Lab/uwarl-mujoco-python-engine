@@ -1160,6 +1160,7 @@ class StatePublisherMujoco(object):
             temp_twist.angular.y = sensor_data[cumm_sum_sensor_num_1+1][1]
             temp_twist.angular.z = sensor_data[cumm_sum_sensor_num_1+1][2]
             link_state_stamped.twist.append(temp_twist)
+            force_torque_comp_stamped.fetch_twist = temp_twist
 
             # Link pose
             temp_pose = Pose()
@@ -1171,6 +1172,7 @@ class StatePublisherMujoco(object):
             temp_pose.orientation.y = sensor_data[cumm_sum_sensor_num_1+3][2]
             temp_pose.orientation.z = sensor_data[cumm_sum_sensor_num_1+3][3]
             link_state_stamped.pose.append(temp_pose)
+            force_torque_comp_stamped.fetch_pose = temp_pose
         
         cumm_sum_sensor_num_2 = cumm_sum_sensor_num_1+curr_sensor_num_1
         curr_sensor_num_2 = 0
@@ -1203,6 +1205,7 @@ class StatePublisherMujoco(object):
             temp_twist.angular.y = sensor_data[cumm_sum_sensor_num_2+1][1]
             temp_twist.angular.z = sensor_data[cumm_sum_sensor_num_2+1][2]
             link_state_stamped.twist.append(temp_twist)
+            force_torque_comp_stamped.forklift_twist = temp_twist
 
             # Link pose
             temp_pose = Pose()
@@ -1214,6 +1217,7 @@ class StatePublisherMujoco(object):
             temp_pose.orientation.y = sensor_data[cumm_sum_sensor_num_2+3][2]
             temp_pose.orientation.z = sensor_data[cumm_sum_sensor_num_2+3][3]
             link_state_stamped.pose.append(temp_pose)
+            force_torque_comp_stamped.forklift_pose = temp_pose
         
         cumm_sum_sensor_num_3 = cumm_sum_sensor_num_2+curr_sensor_num_2
         curr_sensor_num_3 = 0
@@ -1246,6 +1250,7 @@ class StatePublisherMujoco(object):
             temp_twist.angular.y = sensor_data[cumm_sum_sensor_num_3+1][1]
             temp_twist.angular.z = sensor_data[cumm_sum_sensor_num_3+1][2]
             link_state_stamped.twist.append(temp_twist)
+            force_torque_comp_stamped.wagon_twist = temp_twist
 
             # Link pose
             temp_pose = Pose()
@@ -1257,6 +1262,7 @@ class StatePublisherMujoco(object):
             temp_pose.orientation.y = sensor_data[cumm_sum_sensor_num_3+3][2]
             temp_pose.orientation.z = sensor_data[cumm_sum_sensor_num_3+3][3]
             link_state_stamped.pose.append(temp_pose)
+            force_torque_comp_stamped.wagon_pose = temp_pose
 
         cumm_sum_sensor_num_4 = cumm_sum_sensor_num_3+curr_sensor_num_3
         curr_sensor_num_4 = 0
