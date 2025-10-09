@@ -139,14 +139,22 @@ class ControlCommand(object):
         # Set control commands in mj_data
         self.mj_data_control.actuator(base_name+'/orie/z').ctrl = control
     
-    def vel_PID(self, Kp, Ki, Kd, CP, base_name):
+    def vel_PID(self, Kp, Ki, Kd, CP, yaw_angle, base_name):
 
-        SP_x = self.vel_base[0]
-        SP_y = self.vel_base[1]
+        # The MuJoCo-model of the mobile agents are not treated as a floating-base, but rather, as an actuated platform w.r.t
+        # the world frame. This means that the actuators pose are w.r.t the world-frame, not the mobile base.
+
+        # So, if the MB was initially tilted, then the actuators, which are fixed to the ground, are also tilted.
+        # This initial-angle is subtracted from the current yaw-angle to get the above provided yaw-angle.
+
+        # Convert the local velocities into the stationary initial base-frame.
+        SP_x = self.vel_base[0]*cos(yaw_angle)-self.vel_base[1]*sin(yaw_angle)
+        SP_y = self.vel_base[0]*sin(yaw_angle)+self.vel_base[1]*cos(yaw_angle)
         SP_theta = self.vel_base[2]
 
-        CP_x = CP[0]
-        CP_y = CP[1]
+        # Current base velocity in initial base-frame.
+        CP_x = CP[0]*cos(yaw_angle)-CP[1]*sin(yaw_angle)
+        CP_y = CP[0]*sin(yaw_angle)+CP[1]*cos(yaw_angle)
         CP_theta = CP[2]
 
         t = rospy.Time().now().to_time()
