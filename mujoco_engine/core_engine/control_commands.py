@@ -66,78 +66,6 @@ class ControlCommand(object):
         # Store data in array to be used by PID control
         # New velocity commands are received at approximately 50 Hz, PID loop runs at 200 Hz
         self.vel_base = [msg.linear.x, msg.linear.y, msg.angular.z]
-
-    # PID loop to control x velocity of non-holonomic-robot in map frame
-    def velx_PID(self, Kp, Ki, Kd, CP, base_name):
-
-        # Convert reference velocities into mapframe
-        SP = self.vel_base[0]
-
-        t = rospy.Time().now().to_time()
-        e_x = float(SP - CP)
-
-        # Compute PID variables
-        P = e_x*Kp
-        self.I_x += Ki*e_x*(t-self.last_time_x+0.0001) # Make sure it is never 0.0
-        D = Kd*(e_x-self.e_x_last)/(t-self.last_time_x+0.0001) # Make sure it is never 0.0
-
-        self.e_x_last = e_x
-        self.last_time_x = t
-
-        control = P+self.I_x+D
-        # if(base_name == "fetch"):
-        #     print("Fetch X-vel CP: "+ str(CP))
-        #     print("Fetch X-vel SP: "+ str(SP))
-        #     print("Fetch X-Force: "+ str(control))
-
-        # Set control commands in mj_data
-        self.mj_data_control.actuator(base_name+'/pose/x').ctrl = control
-
-
-    # PID loop to control y velocity of holonomic-robot in map frame
-    def vely_PID(self, Kp, Ki, Kd, CP, base_name):
-
-        # Convert reference velocities into mapframe
-        SP = self.vel_base[1]
-        t = rospy.Time().now().to_time()
-        e_y = float(SP - CP)
-
-        # Compute PID variables
-        P = e_y*Kp
-        self.I_y += Ki*e_y*(t-self.last_time_y+0.0001)
-        D = Kd*(e_y-self.e_y_last)/(t-self.last_time_y+0.0001)
-
-        self.e_y_last = e_y
-        self.last_time_y = t
-
-        control = P+self.I_y+D
-        # if(base_name == "fetch"):
-        #     print("Fetch Y-vel: "+ str(control))
-
-        # Set control commands in mj_data
-        self.mj_data_control.actuator(base_name+'/pose/y').ctrl = control
-
-    
-    # PID loop to control yaw rate of holonomic-robot in map frame
-    def veltheta_PID(self, Kp, Ki, Kd, CP,base_name):
-
-        SP = self.vel_base[2]
-
-        t = rospy.Time().now().to_time()
-        e_theta = float(SP - CP)
-
-        # Compute PID variables
-        P = e_theta*Kp
-        self.I_theta += Ki*e_theta*(t-self.last_time_theta+0.0001)
-        D = Kd*(e_theta-self.e_theta_last)/(t-self.last_time_theta+0.0001)
-
-        self.e_theta_last = e_theta
-        self.last_time_theta = t
-
-        control = P+self.I_theta+D
-
-        # Set control commands in mj_data
-        self.mj_data_control.actuator(base_name+'/orie/z').ctrl = control
     
     def vel_PID(self, Kp, Ki, Kd, CP, yaw_angle, base_name):
 
@@ -161,6 +89,10 @@ class ControlCommand(object):
         e_x = float(SP_x - CP_x)
         e_y = float(SP_y - CP_y)
         e_theta = float(SP_theta - CP_theta)
+        # if(base_name is "fetch"):
+        #     print("SP theta vel: "+str(SP_theta))
+        #     print("CP theta vel: "+str(CP_theta))
+
 
         # Compute PID variables
         P_x = e_x*Kp[0]
