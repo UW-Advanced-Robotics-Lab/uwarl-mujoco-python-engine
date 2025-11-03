@@ -390,7 +390,7 @@ class Mujoco_Engine:
         if (self._robot_list[1]):
             self.fetch_control_commands.vel_PID([25.0,25.0,12.0], 
                                                 [0.3,0.3,0.3], 
-                                                [1.3,1.3,0.3], 
+                                                [1.3,1.3,0], 
                                                 [self.fetch_currentx_vel,self.fetch_currenty_vel,self.fetch_currenttheta_vel],
                                                 self.fetch_current_theta-self.fetch_initial_theta,
                                                 self.fetch_base_name)
