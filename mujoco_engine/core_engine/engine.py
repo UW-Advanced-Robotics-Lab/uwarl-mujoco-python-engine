@@ -218,10 +218,10 @@ class Mujoco_Engine:
         # Start video capture
         self.camera_video = cv2.VideoWriter(self._write_to+'/camera.avi',  
                                             cv2.VideoWriter_fourcc(*'MJPG'), 
-                                            10, (self.width,self.h_min))
+                                            self._rate_scene, (self.width,self.h_min))
         self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
                                               cv2.VideoWriter_fourcc(*'MJPG'), 
-                                              10, (1280,720))
+                                              self._rate_scene, (1280,720))
 
         
     #==================================#
