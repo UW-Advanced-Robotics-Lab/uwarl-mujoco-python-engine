@@ -232,7 +232,7 @@ class Mujoco_Engine:
         self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
                                               cv2.VideoWriter_fourcc(*'MJPG'), 
                                               self._rate_scene, (1280,720))
-        
+
         # Initialize the queues
         # Queue of in-coming MuJoCo data
         self.queue_muj_data = Queue()
@@ -425,6 +425,17 @@ class Mujoco_Engine:
                                                    [self.forklift_currentx_vel,self.forklift_currenty_vel,self.forklift_currenttheta_vel],
                                                    self.forklift_current_theta-self.forklift_initial_theta,
                                                    self.forklift_base_name)
+            
+        # stepping if needed
+        # if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
+        #     self.mj_viewer.is_key_registered_to_step_to_next_safe():
+
+        # - render current view:
+        steps = round(1/self._rate_Hz/self.mj_model._model.opt.timestep)
+        for i in range(steps):
+            mujoco.mj_step(self.mj_model._model, self.mj_data._data)
+            
+            # self.mj_viewer.reset_key_registered_to_step_to_next_safe()
 
         # Extract only what the viewer needs to render
         state_to_send = {
