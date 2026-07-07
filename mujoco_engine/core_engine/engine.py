@@ -41,6 +41,7 @@ from mujoco_engine.core_engine.effort_control_commands import EffortControlComma
 
 # For running the MuJoCo viewer on a separate process
 from multiprocessing import Process, Queue
+import os
 
 from scipy.spatial.transform import Rotation as R
 
@@ -239,7 +240,7 @@ class Mujoco_Engine:
         # self.queue_muj_data.put(self.mj_data._data)
         
         # Viewer
-        p_viewer = Process(target=self.muj_viewer, args=(self.queue_muj_data,))    # Out (20 Hz)
+        p_viewer = Process(target=self.muj_viewer, args=(self.queue_muj_data,))
         
         # Start the process:
         # To render
@@ -455,6 +456,16 @@ class Mujoco_Engine:
         self.pub_time.publish(self.simtime)
     
     def muj_viewer(self,queue_muj_data):
+        # --- CORE ISOLATION ---
+        # Pin this viewer process exclusively to Core 7
+        try:
+            # '0' refers to the current process (the child process)
+            os.sched_setaffinity(0, {7})
+            print(f"[Viewer] Process started and pinned to CPU core(s): {os.sched_getaffinity(0)}")
+        except Exception as e:
+            print(f"[Viewer] Could not pin to core 7: {e}")
+        # ----------------------
+        
         # 1. Re-initialize the Model in the new process
         # We need the path, which you should store in self.xml_path
         local_model = MjModel.from_xml_path(self.xml_path)
