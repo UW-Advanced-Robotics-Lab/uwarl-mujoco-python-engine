@@ -460,10 +460,10 @@ class Mujoco_Engine:
         # Pin this viewer process exclusively to Core 7
         try:
             # '0' refers to the current process (the child process)
-            os.sched_setaffinity(0, {7})
+            os.sched_setaffinity(0, {8})
             print(f"[Viewer] Process started and pinned to CPU core(s): {os.sched_getaffinity(0)}")
         except Exception as e:
-            print(f"[Viewer] Could not pin to core 7: {e}")
+            print(f"[Viewer] Could not pin to core 8: {e}")
         # ----------------------
         
         # 1. Re-initialize the Model in the new process
