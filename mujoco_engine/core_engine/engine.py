@@ -28,6 +28,8 @@ from cv_bridge import CvBridge, CvBridgeError
 
 import rospy
 
+from rosgraph_msgs.msg import Clock
+
 # custom libraries:
 import mujoco_viewer
 
@@ -99,6 +101,7 @@ class Mujoco_Engine:
     ):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
+        self.clock_pub = rospy.Publisher('/clock', Clock, queue_size=10)
         ## Init Configs:
         if camera_config:
             self._camera_config = (camera_config) # override if given
@@ -435,6 +438,10 @@ class Mujoco_Engine:
         steps = round(1/self._rate_Hz/self.mj_model._model.opt.timestep)
         for i in range(steps):
             mujoco.mj_step(self.mj_model._model, self.mj_data._data)
+        
+        sim_time_msg = Clock()
+        sim_time_msg.clock = rospy.Time.from_sec(self.mj_data.time)
+        self.clock_pub.publish(sim_time_msg)
             
             # self.mj_viewer.reset_key_registered_to_step_to_next_safe()
 
