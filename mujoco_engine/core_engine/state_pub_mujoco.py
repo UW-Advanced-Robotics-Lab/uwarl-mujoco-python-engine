@@ -10,6 +10,8 @@ from sensor_msgs.msg import JointState
 from uwarl_mujoco_ros_msgs.msg import FTcompensation, JointStateArray, LinkStateArray
 from tf.transformations import quaternion_inverse, quaternion_multiply
 
+import time
+
 
 class StatePublisherMujoco(object):
 
@@ -306,15 +308,20 @@ class StatePublisherMujoco(object):
             act_eff_data.append(self.data.actuator(act_name).ctrl)
         
         # Current time
-        curr_time = rospy.Time.now()
-        link_state_stamped.header.stamp = curr_time
-        joint_state_stamped.header.stamp = curr_time
-        force_torque_state_stamped.header.stamp = curr_time
-        force_torque_comp_stamped.header.stamp = curr_time
+        curr_time_0 = rospy.Time.now()
+        link_state_stamped.header.stamp = curr_time_0
+        joint_state_stamped.header.stamp = curr_time_0
+        force_torque_state_stamped.header.stamp = curr_time_0
+        force_torque_comp_stamped.header.stamp = curr_time_0
         link_state_stamped.header.seq = self.counter
         joint_state_stamped.header.seq = self.counter
         force_torque_state_stamped.header.seq = self.counter
         force_torque_comp_stamped.header.seq = self.counter
+
+        curr_time_1 = time.time()
+        force_torque_comp_stamped.curr_time = curr_time_1
+        link_state_stamped.curr_time = curr_time_1
+        joint_state_stamped.curr_time = curr_time_1
 
         # Current cummulative sum of sensors so far
         cumm_sum_sensor_num_0 = 0
