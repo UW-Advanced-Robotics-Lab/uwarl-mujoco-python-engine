@@ -454,9 +454,9 @@ class Mujoco_Engine:
         self.queue_muj_data.put(state_to_send)
 
         # Publish link_states and joint_states
-        self.state_pub.pub_joint_states()
+        self.state_pub.pub_joint_states(self.mj_data.time)
         self.state_pub.pub_link_states()
-        self.state_pub.pub_sensor_states()
+        self.state_pub.pub_sensor_states(self.mj_data.time)
 
         # Publish simulation time
         self.simtime.data = self.mj_data.time

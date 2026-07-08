@@ -10,7 +10,7 @@ from sensor_msgs.msg import JointState
 from uwarl_mujoco_ros_msgs.msg import FTcompensation, JointStateArray, LinkStateArray
 from tf.transformations import quaternion_inverse, quaternion_multiply
 
-import time
+import math
 
 
 class StatePublisherMujoco(object):
@@ -148,7 +148,7 @@ class StatePublisherMujoco(object):
         # MB effort
         self.mb_effort = ['smt/pose/x','smt/pose/y','smt/orie/z']
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
-    def pub_joint_states(self):
+    def pub_joint_states(self, muj_time):
 
         # Initialize joint_state object
         self.joint_state = JointState()
@@ -165,8 +165,8 @@ class StatePublisherMujoco(object):
             self.joint_state.position.append(pos)
             self.joint_state.velocity.append(vel)
             self.joint_state.effort.append(eff)
-            
-        self.joint_state.header.stamp = rospy.Time.now()
+
+        self.joint_state.header.stamp = rospy.Time.from_sec(muj_time)
 
         # Publish joint_states
         self.pub_joints.publish(self.joint_state)
@@ -278,7 +278,7 @@ class StatePublisherMujoco(object):
         self.pub_links.publish(self.link_states)
 
     # Publish sensor states: relative to initial state (which is 0.0 for all sensors)
-    def pub_sensor_states(self):
+    def pub_sensor_states(self, muj_time):
 
         # Initialize sensor objects:
         # Link States
@@ -307,18 +307,17 @@ class StatePublisherMujoco(object):
         for act_name in self.mb_effort:
             act_eff_data.append(self.data.actuator(act_name).ctrl)
         
-        # Current time
-        curr_time_0 = rospy.Time.now()
-        link_state_stamped.header.stamp = curr_time_0
-        joint_state_stamped.header.stamp = curr_time_0
-        force_torque_state_stamped.header.stamp = curr_time_0
-        force_torque_comp_stamped.header.stamp = curr_time_0
+        # Current tim
+        link_state_stamped.header.stamp = rospy.Time.from_sec(muj_time)
+        joint_state_stamped.header.stamp = rospy.Time.from_sec(muj_time)
+        force_torque_state_stamped.header.stamp = rospy.Time.from_sec(muj_time)
+        force_torque_comp_stamped.header.stamp = rospy.Time.from_sec(muj_time)
         link_state_stamped.header.seq = self.counter
         joint_state_stamped.header.seq = self.counter
         force_torque_state_stamped.header.seq = self.counter
         force_torque_comp_stamped.header.seq = self.counter
 
-        curr_time_1 = time.time()
+        curr_time_1 = muj_time
         force_torque_comp_stamped.curr_time = curr_time_1
         link_state_stamped.curr_time = curr_time_1
         joint_state_stamped.curr_time = curr_time_1
