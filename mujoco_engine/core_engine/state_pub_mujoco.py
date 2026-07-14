@@ -307,7 +307,7 @@ class StatePublisherMujoco(object):
         for act_name in self.mb_effort:
             act_eff_data.append(self.data.actuator(act_name).ctrl)
         
-        # Current tim
+        # Current time
         link_state_stamped.header.stamp = rospy.Time.from_sec(muj_time)
         joint_state_stamped.header.stamp = rospy.Time.from_sec(muj_time)
         force_torque_state_stamped.header.stamp = rospy.Time.from_sec(muj_time)
