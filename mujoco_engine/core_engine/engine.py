@@ -210,12 +210,12 @@ class Mujoco_Engine:
         # Initialized current Forklift-base yaw angular-displacement
         self.forklift_current_theta = 0.0
 
-        # ## MJ Viewer:
-        # self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
-        #     title="Mujoco-Engine", 
-        #     sensor_config=self._camera_config,
-        #     window_size=(1280,720),
-        # )
+        ## MJ Viewer:
+        self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
+            title="Mujoco-Engine", 
+            sensor_config=self._camera_config,
+            window_size=(1280,720),
+        )
         # if len(self._camera_config):
         #     self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
         # self._t_update = time.time()
@@ -237,18 +237,18 @@ class Mujoco_Engine:
                                               cv2.VideoWriter_fourcc(*'MJPG'), 
                                               self._rate_scene, (1280,720))
 
-        # Initialize the queues
-        # Queue of in-coming MuJoCo data
-        self.queue_muj_data = Queue()
-        # self.queue_muj_data.put(self.mj_data._data)
+        # # Initialize the queues
+        # # Queue of in-coming MuJoCo data
+        # self.queue_muj_data = Queue()
+        # # self.queue_muj_data.put(self.mj_data._data)
         
-        # Viewer
-        p_viewer = Process(target=self.muj_viewer, args=(self.queue_muj_data,))
+        # # Viewer
+        # p_viewer = Process(target=self.muj_viewer, args=(self.queue_muj_data,))
         
-        # Start the process:
-        # To render
-        p_viewer.start()
-        rospy.loginfo("Start rendering ...")
+        # # Start the process:
+        # # To render
+        # p_viewer.start()
+        # rospy.loginfo("Start rendering ...")
 
         
     #==================================#
@@ -256,7 +256,7 @@ class Mujoco_Engine:
     #==================================#
     def shutdown(self):
         print("[Job_Engine::{}] Program killed: running cleanup code".format(self._name))
-        # self.mj_viewer._on_terminate_safe()
+        self.mj_viewer._on_terminate_safe()
         cv2.destroyAllWindows()
             
     def is_shutdown(self):
@@ -429,29 +429,103 @@ class Mujoco_Engine:
                                                    [self.forklift_currentx_vel,self.forklift_currenty_vel,self.forklift_currenttheta_vel],
                                                    self.forklift_current_theta-self.forklift_initial_theta,
                                                    self.forklift_base_name)
-            
-        # stepping if needed
-        # if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
-        #     self.mj_viewer.is_key_registered_to_step_to_next_safe():
-
-        # - render current view:
-        steps = round(1/self._rate_Hz/self.mj_model._model.opt.timestep)
-        for i in range(steps):
-            mujoco.mj_step(self.mj_model._model, self.mj_data._data)
         
         sim_time_msg = Clock()
         sim_time_msg.clock = rospy.Time.from_sec(self.mj_data.time)
         self.clock_pub.publish(sim_time_msg)
-            
-            # self.mj_viewer.reset_key_registered_to_step_to_next_safe()
 
-        # Extract only what the viewer needs to render
-        state_to_send = {
-            'qpos': self.mj_data.qpos.copy(),
-            'qvel': self.mj_data.qvel.copy(),
-            'time': self.mj_data.time
-        }
-        self.queue_muj_data.put(state_to_send)
+        # # Extract only what the viewer needs to render
+        # state_to_send = {
+        #     'qpos': self.mj_data.qpos.copy(),
+        #     'qvel': self.mj_data.qvel.copy(),
+        #     'time': self.mj_data.time
+        # }
+        # self.queue_muj_data.put(state_to_send)
+
+        ################################################
+        # In order to keep the MuJoCo viewer frame-rate in sync with the engine.
+        # Don't want the viewer to lag behind the engine.
+
+        if not self.mj_viewer.is_key_registered_to_pause_program_safe() or \
+            self.mj_viewer.is_key_registered_to_step_to_next_safe():
+
+            # - render current view:
+            steps = round(1/self._rate_Hz/self.mj_model._model.opt.timestep)
+            for i in range(steps):
+                mujoco.mj_step(self.mj_model._model, self.mj_data._data)
+            
+            self.mj_viewer.reset_key_registered_to_step_to_next_safe()
+
+        # process GUI interrupts
+        self.mj_viewer.process_safe()
+
+        # Update mj_viewer with specified frequency
+        if self.i == 0:
+
+            self.mj_viewer.update_safe()
+            self.mj_viewer.render_safe()
+            self.i=self.steps_per_render-1
+
+            # Set "if_viewport_preview" to True (input "_update" function) when you want to plot the viewport's view
+            if self.if_viewport_preview:
+                # - capture view:
+                viewport_data = self.mj_viewer.acquire_viewport_frames_safe()
+                if( not (viewport_data["frame_buffer"] == [])):
+                    # image = viewport_data["frame_buffer"]
+                    # np.reshape(image, (-1,1))
+                    # std_dev=np.std(image)
+                    # print(std_dev)
+                    img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
+                    # img = cv2.flip(img, 0)
+                    img = cv2.resize(img, (1280, 720))
+                    self.viewport_video.write(img)
+                    cv2.waitKey(int(1000/self._rate_Hz))
+
+            # Set "if_camera_preview" to True (input "_update" function) when you want to plot the cameras mounted on the WAM
+            # Rendering of sensor cameras takes long!! Reduce update frequency to maintain real time simulation!
+            if self.if_camera_preview:
+
+                self.mj_viewer.render_sensor_cameras_safe()
+
+                # - capture view:
+                camera_sensor_data = self.mj_viewer.acquire_sensor_camera_frames_safe()
+
+                # render captured views on cv2      
+                cv2_capture_window = []
+                for camera_buf, frame_time_stamp in zip(camera_sensor_data["frame_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
+                    img = cv2.cvtColor(camera_buf[1], cv2.COLOR_RGB2BGR)
+                    img = cv2.flip(img, 0)
+                    img = cv2.resize(img, (int(img.shape[1] * self.h_min / img.shape[0]), self.h_min))
+                    # if self._write_to: #[NOT-USED: Implementation to save frames directly]
+                    #     imageio.imwrite(
+                    #         "{}/{}_{}.png".format(self._write_to, camera_buf[0].replace("/", "_"), frame_time_stamp[1]), 
+                    #         img
+                    #     )
+                    cv2_capture_window.append(img)
+                # Write depth-image (check if we have actually enabled depth-sensor capabilities in the camera-plugin used when defining a camera-sensor.)
+                # if self._write_to: #[NOT-USED: Implementation to save frames directly]
+                #     for camera_depth_buf, frame_time_stamp in zip(camera_sensor_data["depth_buffer"].items(),camera_sensor_data["frame_stamp"].items()):
+                #         # Covert float-type gray-scale to uint8 (https://stackoverflow.com/a/60014123/19163020)
+                #         uint_8_img = (camera_depth_buf[1]*255).astype(np.uint8)
+                #         imageio.imwrite(
+                #             "{}/{}_{}_gray.png".format(self._write_to, camera_depth_buf[0].replace("/", "_"), frame_time_stamp[1]), 
+                #             uint_8_img
+                #         )
+                hoz_cat_img = cv2.hconcat(cv2_capture_window)
+                cv2.imshow("camera views",hoz_cat_img)
+                self.camera_video.write(hoz_cat_img)
+
+                
+                rear_cam = self.bridge.cv2_to_imgmsg(hoz_cat_img, "bgr8")
+                rear_cam.header.frame_id = "rear"
+                # Current time
+                curr_time = rospy.Time.now()
+                rear_cam.header.stamp = curr_time
+                self.pub_rear_cam.publish(rear_cam)
+
+                cv2.waitKey(int(1000/self._rate_Hz))
+
+        self.i-=1
 
         # Publish link_states and joint_states
         self.state_pub.pub_joint_states(self.mj_data.time)
