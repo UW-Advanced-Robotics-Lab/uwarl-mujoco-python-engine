@@ -430,18 +430,6 @@ class Mujoco_Engine:
                                                    self.forklift_current_theta-self.forklift_initial_theta,
                                                    self.forklift_base_name)
         
-        sim_time_msg = Clock()
-        sim_time_msg.clock = rospy.Time.from_sec(self.mj_data.time)
-        self.clock_pub.publish(sim_time_msg)
-
-        # # Extract only what the viewer needs to render
-        # state_to_send = {
-        #     'qpos': self.mj_data.qpos.copy(),
-        #     'qvel': self.mj_data.qvel.copy(),
-        #     'time': self.mj_data.time
-        # }
-        # self.queue_muj_data.put(state_to_send)
-
         ################################################
         # In order to keep the MuJoCo viewer frame-rate in sync with the engine.
         # Don't want the viewer to lag behind the engine.
@@ -455,6 +443,18 @@ class Mujoco_Engine:
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
+        
+        sim_time_msg = Clock()
+        sim_time_msg.clock = rospy.Time.from_sec(self.mj_data.time)
+        self.clock_pub.publish(sim_time_msg)
+
+        # # Extract only what the viewer needs to render
+        # state_to_send = {
+        #     'qpos': self.mj_data.qpos.copy(),
+        #     'qvel': self.mj_data.qvel.copy(),
+        #     'time': self.mj_data.time
+        # }
+        # self.queue_muj_data.put(state_to_send)
 
         # process GUI interrupts
         self.mj_viewer.process_safe()
