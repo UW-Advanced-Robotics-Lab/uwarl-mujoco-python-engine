@@ -48,7 +48,7 @@ import os
 from scipy.spatial.transform import Rotation as R
 
 from std_msgs.msg import Float64
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -85,6 +85,7 @@ class Mujoco_Engine:
     _camera_views = {}
     _IC_state = None
     _core = None
+    _viewport        = {"width": 1920, "height":1080}
     
     #===============================#
     #  I N I T I A L I Z A T I O N  #
@@ -97,7 +98,8 @@ class Mujoco_Engine:
         write_to = None,
         robot_list = None,
         if_camera_preview = False,
-        if_viewport_preview = True
+        if_viewport_preview = True,
+        viewport = None
     ):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -105,6 +107,8 @@ class Mujoco_Engine:
         ## Init Configs:
         if camera_config:
             self._camera_config = (camera_config) # override if given
+        if viewport:
+            self._viewport = viewport
         self.xml_path = xml_path
         self._name = name
         self._rate_Hz = rate_Hz
@@ -119,7 +123,9 @@ class Mujoco_Engine:
         self.if_viewport_preview = if_viewport_preview
 
         # Create publishers to publish camera view
-        self.pub_rear_cam = rospy.Publisher('/mujoco/camera',Image,queue_size=1)
+        self.pub_rear_cam = rospy.Publisher('/mujoco/camera/compressed',CompressedImage,queue_size=1)
+        # Create publishers to publish camera view
+        self.pub_viewport = rospy.Publisher('/mujoco/viewport/compressed',CompressedImage,queue_size=1)
         # To convert open  CV images to an ecoding that can be passed to ros message image.
         self.bridge = CvBridge()
 
@@ -214,7 +220,7 @@ class Mujoco_Engine:
         self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
             title="Mujoco-Engine", 
             sensor_config=self._camera_config,
-            window_size=(1280,720),
+            window_size=(self._viewport["width"], self._viewport["height"]),
         )
         # if len(self._camera_config):
         #     self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
@@ -235,7 +241,7 @@ class Mujoco_Engine:
                                             self._rate_scene, (self.width,self.h_min))
         self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
                                               cv2.VideoWriter_fourcc(*'MJPG'), 
-                                              self._rate_scene, (1280,720))
+                                              self._rate_scene, (self._viewport["width"], self._viewport["height"]))
 
         # # Initialize the queues
         # # Queue of in-coming MuJoCo data
@@ -477,8 +483,30 @@ class Mujoco_Engine:
                     # print(std_dev)
                     img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
                     # img = cv2.flip(img, 0)
-                    img = cv2.resize(img, (1280, 720))
+                    img = cv2.resize(img, (self._viewport["width"], self._viewport["height"]))
                     self.viewport_video.write(img)
+
+                    # Prepare CompressedImage message
+                    viewport_img_msg = CompressedImage()
+                    viewport_img_msg.header.stamp = rospy.Time.now()
+                    viewport_img_msg.header.frame_id = "camera_link"
+                    viewport_img_msg.format = "jpeg"
+
+                    # Compress the frame to JPEG (Quality 80 is usually the sweet spot)
+                    # This turns the 6MB raw frame back into a small JPEG buffer
+                    success, encoded_img = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                    
+                    if success:
+                        viewport_img_msg.data = np.array(encoded_img).tobytes()
+                        self.pub_viewport.publish(viewport_img_msg)
+
+                    # viewport_cam = self.bridge.cv2_to_imgmsg(img, "bgr8")
+                    # viewport_cam.header.frame_id = "rear"
+                    # # Current time
+                    # curr_time = rospy.Time.now()
+                    # viewport_cam.header.stamp = curr_time
+                    # self.pub_viewport.publish(viewport_cam)
+                    
                     cv2.waitKey(int(1000/self._rate_Hz))
 
             # Set "if_camera_preview" to True (input "_update" function) when you want to plot the cameras mounted on the WAM
@@ -515,13 +543,19 @@ class Mujoco_Engine:
                 cv2.imshow("camera views",hoz_cat_img)
                 self.camera_video.write(hoz_cat_img)
 
+                # Prepare CompressedImage message
+                camera_img_msg = CompressedImage()
+                camera_img_msg.header.stamp = rospy.Time.now()
+                camera_img_msg.header.frame_id = "camera_link"
+                camera_img_msg.format = "jpeg"
+
+                # Compress the frame to JPEG (Quality 80 is usually the sweet spot)
+                # This turns the 6MB raw frame back into a small JPEG buffer
+                success, encoded_img = cv2.imencode('.jpg', hoz_cat_img, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
                 
-                rear_cam = self.bridge.cv2_to_imgmsg(hoz_cat_img, "bgr8")
-                rear_cam.header.frame_id = "rear"
-                # Current time
-                curr_time = rospy.Time.now()
-                rear_cam.header.stamp = curr_time
-                self.pub_rear_cam.publish(rear_cam)
+                if success:
+                    camera_img_msg.data = np.array(encoded_img).tobytes()
+                    self.pub_rear_cam.publish(camera_img_msg)
 
                 cv2.waitKey(int(1000/self._rate_Hz))
 
@@ -602,7 +636,7 @@ class Mujoco_Engine:
                         # print(std_dev)
                         img = cv2.cvtColor(viewport_data["frame_buffer"], cv2.COLOR_RGB2BGR)
                         # img = cv2.flip(img, 0)
-                        img = cv2.resize(img, (1280, 720))
+                        img = cv2.resize(img, (self._viewport["width"], self._viewport["height"]))
                         self.viewport_video.write(img)
                         cv2.waitKey(int(1000/self._rate_Hz))
 
