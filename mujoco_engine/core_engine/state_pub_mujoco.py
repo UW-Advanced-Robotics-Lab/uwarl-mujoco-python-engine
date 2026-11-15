@@ -147,6 +147,18 @@ class StatePublisherMujoco(object):
             counter +=1
         # MB effort
         self.mb_effort = ['smt/pose/x','smt/pose/y','smt/orie/z']
+        # Cart-handle force-torque sensor (2026-11-15; optional): when the model has the sensors "force_handle" and "torque_handle" (site
+        # "cart_handle_ft_site" at the cart handle's mid-point, axes = the cart base frame; playground_one_handed_cart_exp_V6.xml), their
+        # readings are published on "/mujoco/handle_wrench" (geometry_msgs/WrenchStamped, site frame): the true wrench between the handle
+        # and the cart body, i.e. what the robot's tool (or hand) exerts on the handle plus the handle's own weight / inertia (0.07 kg).
+        # Models without them are not affected (no publisher).
+        self.handle_ft_adr = None
+        try:
+            _f = self.model.name2id('force_handle','sensor'); _t = self.model.name2id('torque_handle','sensor')
+            self.handle_ft_adr = (int(self.model.sensor_adr[_f]), int(self.model.sensor_adr[_t]))
+            self.pub_handle_wrench = rospy.Publisher('/mujoco/handle_wrench',WrenchStamped,queue_size=1)
+        except Exception:
+            self.handle_ft_adr = None
     # Publish joint states: relative to initial state (which is 0.0 for all joints)
     def pub_joint_states(self, muj_time):
 
@@ -1334,5 +1346,15 @@ class StatePublisherMujoco(object):
         self.pub_ft_sensor.publish(force_torque_state_stamped)
         # Publish FT Compensation
         self.pub_ft_comp.publish(force_torque_comp_stamped)
+        # Publish the cart-handle wrench (only for models with the handle sensors, see __init__)
+        if self.handle_ft_adr is not None:
+            handle_wrench = WrenchStamped()
+            handle_wrench.header.stamp = rospy.Time.from_sec(muj_time)
+            handle_wrench.header.seq = self.counter
+            handle_wrench.header.frame_id = 'cart_handle_ft_site'
+            fa, ta = self.handle_ft_adr
+            handle_wrench.wrench.force.x, handle_wrench.wrench.force.y, handle_wrench.wrench.force.z = [float(v) for v in self.data.sensordata[fa:fa+3]]
+            handle_wrench.wrench.torque.x, handle_wrench.wrench.torque.y, handle_wrench.wrench.torque.z = [float(v) for v in self.data.sensordata[ta:ta+3]]
+            self.pub_handle_wrench.publish(handle_wrench)
         # Increment counter
         self.counter +=1
