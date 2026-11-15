@@ -295,6 +295,33 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
+    def _apply_caster_scrub(self):
+        # 2026-11-15 (user: the turning resistance measured on the hardware): scrub torque of the cart's swivel casters, fitted on the robot
+        # (run 2026_11_04_0): M = M0 * w * a / sqrt((w a)^2 + v^2 + eps^2) per caster, w the caster hub's absolute yaw rate (rad/s), v its
+        # wheel's rolling speed (m/s): full M0 at rest, fading while the wheel rolls. Applied as an external torque about the world vertical on
+        # each hub body (as the ground's friction), opposing w. Active only when the model has the custom numerics "caster_scrub_M0" (N m per
+        # caster), "caster_scrub_a" (m), "caster_scrub_eps" (m/s), written by "cart_mpc/script/mujoco_cart_V4.py"; hub / wheel bodies
+        # "cart/swivel_hub/C_link" + "cart/whl/FC_link" and, if present, "cart/swivel_hub/C2_link" + "cart/whl/FC2_link".
+        if not hasattr(self, '_scrub'):
+            m = self.mj_model._model; self._scrub = None
+            try:
+                M0 = float(m.numeric('caster_scrub_M0').data[0]); a = float(m.numeric('caster_scrub_a').data[0]); eps = float(m.numeric('caster_scrub_eps').data[0])
+            except Exception:
+                return
+            pairs = []
+            for hub, whl in (('cart/swivel_hub/C_link', 'cart/whl/FC_link'), ('cart/swivel_hub/C2_link', 'cart/whl/FC2_link')):
+                try: pairs.append((m.body(hub).id, m.body(whl).id))
+                except Exception: pass
+            self._scrub = (M0, a, eps, pairs, np.zeros(6))
+            rospy.loginfo("MuJoCo engine: caster scrub M0 %.3f N m per caster, a %.3f m, eps %.4f m/s on %d casters" % (M0, a, eps, len(pairs)))
+        if self._scrub is None:
+            return
+        M0, a, eps, pairs, v6 = self._scrub; m = self.mj_model._model; d = self.mj_data._data
+        for hb, wb in pairs:
+            mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, hb, v6, 0); w = v6[2]
+            mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, wb, v6, 0); v = np.hypot(v6[3], v6[4])
+            d.xfrc_applied[hb, 3:6] = [0.0, 0.0, -M0*w*a/np.sqrt((w*a)**2 + v**2 + eps**2)]
+
     def _hold_callback(self, msg):
         # "/mujoco/hold" (std_msgs/Bool): True = pause the simulation, False = resume
         if msg.data and not self._hold:
@@ -488,6 +515,7 @@ class Mujoco_Engine:
             # - render current view:
             steps = round(1/self._rate_Hz/self.mj_model._model.opt.timestep)
             for i in range(steps):
+                self._apply_caster_scrub()   # 2026-11-15: caster scrub torque (only if the model defines it)
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
