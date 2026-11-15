@@ -29,6 +29,9 @@ from cv_bridge import CvBridge, CvBridgeError
 import rospy
 
 from rosgraph_msgs.msg import Clock
+# 2026-11-14: simulation hold requested by a controller node ("/mujoco/hold", see "_hold_active")
+from std_msgs.msg import Bool
+import time as _wall_time
 
 # custom libraries:
 import mujoco_viewer
@@ -104,6 +107,17 @@ class Mujoco_Engine:
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
         self.clock_pub = rospy.Publisher('/clock', Clock, queue_size=10)
+        # 2026-11-14: simulation hold. A controller node publishes True on "/mujoco/hold" when a result it needs at the current
+        # simulated time (e.g. a Cart-MPC plan) has not arrived yet, and False when it has. While held, the engine does not step the
+        # physics or run the base PID, but keeps publishing "/clock" (unchanged), so the ROS clock, which follows "/clock", is
+        # paused too. Safety: a hold is released by the engine after "/mujoco/max_hold_wall_time" seconds of wall time
+        # (default 30 s), so that a node that dies while holding cannot freeze the simulation. Nothing publishes on "/mujoco/hold"
+        # unless a node is written to: older pipelines are unaffected.
+        self._hold = False
+        self._hold_since_wall = 0.0
+        self._hold_timed_out = False
+        self._max_hold_wall_time = float(rospy.get_param('/mujoco/max_hold_wall_time', 30.0))
+        self._hold_sub = rospy.Subscriber('/mujoco/hold', Bool, self._hold_callback, queue_size=10)
         ## Init Configs:
         if camera_config:
             self._camera_config = (camera_config) # override if given
@@ -281,7 +295,35 @@ class Mujoco_Engine:
     def _internal_engine_update(self):
         self._update()
 
+    def _hold_callback(self, msg):
+        # "/mujoco/hold" (std_msgs/Bool): True = pause the simulation, False = resume
+        if msg.data and not self._hold:
+            self._hold_since_wall = _wall_time.time()
+            self._hold_timed_out = False
+        self._hold = bool(msg.data)
+
+    def _hold_active(self):
+        # True while a hold is requested and has not exceeded "/mujoco/max_hold_wall_time" (wall time)
+        if not self._hold:
+            return False
+        if (_wall_time.time()-self._hold_since_wall) > self._max_hold_wall_time:
+            if not self._hold_timed_out:
+                rospy.logwarn("MuJoCo engine: hold requested on /mujoco/hold for more than %.1f s (wall time): released" % self._max_hold_wall_time)
+                self._hold_timed_out = True
+            return False
+        return True
+
     def _update(self):
+
+        # 2026-11-14: while a hold is active, neither step the physics nor run the controllers that integrate over time (base
+        # velocity PID: its time-step would be ~0 with the clock paused); keep the GUI responsive and keep publishing "/clock".
+        if self._hold_active():
+            self.mj_viewer.process_safe()
+            sim_time_msg = Clock()
+            sim_time_msg.clock = rospy.Time.from_sec(self.mj_data.time)
+            self.clock_pub.publish(sim_time_msg)
+            _wall_time.sleep(0.001)
+            return
 
         # Get current velocity of base for PID control
         # For Summit
