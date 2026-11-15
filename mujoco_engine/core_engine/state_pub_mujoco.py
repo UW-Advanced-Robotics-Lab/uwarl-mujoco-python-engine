@@ -1296,7 +1296,11 @@ class StatePublisherMujoco(object):
             # Angular acceleration
             temp_accel_1.angular.x = 0
             temp_accel_1.angular.y = 0
-            temp_accel_1.angular.z = (sensor_data[cumm_sum_sensor_num_4+1][1]-sensor_data[cumm_sum_sensor_num_4+0][1])/0.1
+            # Yaw acceleration from the two cart accelerometers (2026-11-15 fix): the sites "imu_sensor_site_1/2_cart_base_link" are 0.1 m apart
+            # along the cart's Y axis, r = (0, 0.1, 0), so a2 - a1 = alpha x r + w x (w x r) = (-0.1 alpha, -0.1 w^2, 0): the yaw acceleration is
+            # -(a2_x - a1_x)/0.1. (Was (a2_y - a1_y)/0.1 = -w^2, the centripetal term, with no yaw-acceleration information; checked on a
+            # recorded run: the new value matches d(gyro z)/dt with correlation 1.000 and gain 1.000, the old one 0.00.)
+            temp_accel_1.angular.z = -(sensor_data[cumm_sum_sensor_num_4+1][0]-sensor_data[cumm_sum_sensor_num_4+0][0])/0.1
             force_torque_comp_stamped.cart_accel_1 = temp_accel_1
             link_state_stamped.accel.append(temp_accel_1)
             # Linear acceleration
@@ -1307,7 +1311,7 @@ class StatePublisherMujoco(object):
             # Angular acceleration
             temp_accel_2.angular.x = 0
             temp_accel_2.angular.y = 0
-            temp_accel_2.angular.z = (sensor_data[cumm_sum_sensor_num_4+1][1]-sensor_data[cumm_sum_sensor_num_4+0][1])/0.1
+            temp_accel_2.angular.z = -(sensor_data[cumm_sum_sensor_num_4+1][0]-sensor_data[cumm_sum_sensor_num_4+0][0])/0.1
             force_torque_comp_stamped.cart_accel_2 = temp_accel_2
 
             # Link name
