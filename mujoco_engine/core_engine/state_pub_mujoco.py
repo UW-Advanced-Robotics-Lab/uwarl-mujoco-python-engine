@@ -13,6 +13,18 @@ from tf.transformations import quaternion_inverse, quaternion_multiply
 import time
 
 
+_CART_YAW_ACCEL_V2 = None
+def cart_yaw_accel_V2():
+    """
+    Step switch (2026-11-16; step 3 of the cart_mpc MuJoCo chronology): which cart yaw acceleration the engine publishes.
+    rospy param /mujoco/cart_yaw_accel_V2: true (default) = -(a2_x - a1_x)/0.1, the yaw acceleration (2026-11-15 fix) |
+    false = (a2_y - a1_y)/0.1 = -w^2 (the value before the fix). Read once, at the first call.
+    """
+    global _CART_YAW_ACCEL_V2
+    if _CART_YAW_ACCEL_V2 is None:
+        _CART_YAW_ACCEL_V2 = bool(rospy.get_param('/mujoco/cart_yaw_accel_V2', True))
+    return _CART_YAW_ACCEL_V2
+
 class StatePublisherMujoco(object):
 
     def __init__(self, Mujdata, Mujmodel, robot_list):
@@ -1300,7 +1312,12 @@ class StatePublisherMujoco(object):
             # along the cart's Y axis, r = (0, 0.1, 0), so a2 - a1 = alpha x r + w x (w x r) = (-0.1 alpha, -0.1 w^2, 0): the yaw acceleration is
             # -(a2_x - a1_x)/0.1. (Was (a2_y - a1_y)/0.1 = -w^2, the centripetal term, with no yaw-acceleration information; checked on a
             # recorded run: the new value matches d(gyro z)/dt with correlation 1.000 and gain 1.000, the old one 0.00.)
-            temp_accel_1.angular.z = -(sensor_data[cumm_sum_sensor_num_4+1][0]-sensor_data[cumm_sum_sensor_num_4+0][0])/0.1
+            # Step switch (2026-11-16; step 3 of the cart_mpc MuJoCo chronology): rosparam /mujoco/cart_yaw_accel_V2 (default true = this fix);
+            # false = the value before the fix, (a2_y - a1_y)/0.1, for checking step 3 against step 2. Read once ("cart_yaw_accel_V2").
+            if cart_yaw_accel_V2():
+                temp_accel_1.angular.z = -(sensor_data[cumm_sum_sensor_num_4+1][0]-sensor_data[cumm_sum_sensor_num_4+0][0])/0.1
+            else:
+                temp_accel_1.angular.z = (sensor_data[cumm_sum_sensor_num_4+1][1]-sensor_data[cumm_sum_sensor_num_4+0][1])/0.1
             force_torque_comp_stamped.cart_accel_1 = temp_accel_1
             link_state_stamped.accel.append(temp_accel_1)
             # Linear acceleration
@@ -1311,7 +1328,7 @@ class StatePublisherMujoco(object):
             # Angular acceleration
             temp_accel_2.angular.x = 0
             temp_accel_2.angular.y = 0
-            temp_accel_2.angular.z = -(sensor_data[cumm_sum_sensor_num_4+1][0]-sensor_data[cumm_sum_sensor_num_4+0][0])/0.1
+            temp_accel_2.angular.z = temp_accel_1.angular.z   # the same value (step switch above)
             force_torque_comp_stamped.cart_accel_2 = temp_accel_2
 
             # Link name
