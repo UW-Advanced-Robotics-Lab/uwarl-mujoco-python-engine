@@ -312,11 +312,28 @@ class Mujoco_Engine:
             for hub, whl in (('cart/swivel_hub/C_link', 'cart/whl/FC_link'), ('cart/swivel_hub/C2_link', 'cart/whl/FC2_link')):
                 try: pairs.append((m.body(hub).id, m.body(whl).id))
                 except Exception: pass
-            self._scrub = (M0, a, eps, pairs, np.zeros(6))
-            rospy.loginfo("MuJoCo engine: caster scrub M0 %.3f N m per caster, a %.3f m, eps %.4f m/s on %d casters" % (M0, a, eps, len(pairs)))
+            # 2026-11-18 (user: step 12, "make the plant follow the fitted law"): optional "caster_scrub_law" = 1: the cart-rate law of the MPC
+            # ("cart_mpc_V30"), one equivalent centred caster on the CART's yaw rate, applied as a yaw torque on "cart/base_link":
+            #   M_cart = -M0 (L / trail) w a / sqrt((w a)^2 + v_x^2 + v_y^2 + (L w)^2 + eps^2),  w the cart's yaw rate, (v_x, v_y) its origin's
+            #   velocity, L "caster_scrub_swivel_ahead" (m), trail "caster_scrub_trail" (m), M0 for both casters together. The hubs get no torque.
+            # Missing or 0: the per-hub law above (the default, unchanged).
+            law = 0; L = trail = 0.0; base = -1
+            try: law = int(round(float(m.numeric('caster_scrub_law').data[0])))
+            except Exception: law = 0
+            if law == 1:
+                L = float(m.numeric('caster_scrub_swivel_ahead').data[0]); trail = float(m.numeric('caster_scrub_trail').data[0]); base = m.body('cart/base_link').id
+            self._scrub = (M0, a, eps, pairs, np.zeros(6), law, L, trail, base)
+            if law == 1:
+                rospy.loginfo("MuJoCo engine: caster scrub, cart-rate law: M0 %.3f N m (both casters), a %.3f m, eps %.4f m/s, swivel %.3f m ahead, trail %.3f m" % (M0, a, eps, L, trail))
+            else:
+                rospy.loginfo("MuJoCo engine: caster scrub M0 %.3f N m per caster, a %.3f m, eps %.4f m/s on %d casters" % (M0, a, eps, len(pairs)))
         if self._scrub is None:
             return
-        M0, a, eps, pairs, v6 = self._scrub; m = self.mj_model._model; d = self.mj_data._data
+        M0, a, eps, pairs, v6, law, L, trail, base = self._scrub; m = self.mj_model._model; d = self.mj_data._data
+        if law == 1:
+            mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, base, v6, 0); w = v6[2]; vx, vy = v6[3], v6[4]
+            d.xfrc_applied[base, 3:6] = [0.0, 0.0, -M0*(L/trail)*w*a/np.sqrt((w*a)**2 + vx**2 + vy**2 + (L*w)**2 + eps**2)]
+            return
         for hb, wb in pairs:
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, hb, v6, 0); w = v6[2]
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, wb, v6, 0); v = np.hypot(v6[3], v6[4])
