@@ -339,6 +339,66 @@ class Mujoco_Engine:
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, wb, v6, 0); v = np.hypot(v6[3], v6[4])
             d.xfrc_applied[hb, 3:6] = [0.0, 0.0, -M0*w*a/np.sqrt((w*a)**2 + v**2 + eps**2)]
 
+    def _log_yaw_forces(self):
+        # 2026-11-18 (user: "do it" = find what loads the base's yaw; "confirm that the prongs are free to rotate about its yaw-axis"): optional
+        # log, OFF unless the environment variable MJ_YAW_FORCE_LOG names a CSV file. Every 10 physics steps (10 ms) one row:
+        #   base yaw joint "smt/orie/z": rate, and its generalized force by source (N m): actuator, passive (damping), constraint (all
+        #   constraint rows: contacts, joint friction, limits, equalities), bias (Coriolis, gravity), inertial (M qacc, all joints' coupling);
+        #   the contacts' share split by what the robot touches OUTSIDE the yaw joint's subtree: torque about the yaw axis (through the joint's
+        #   anchor) of the contact force on the robot side, for wheel-ground, tool-handle (geom names "tool/...") and any other pair;
+        #   tool holder joint "wam/tool/holder_yaw": angle, rate, passive torque (spring + damping) and constraint torque (its frictionloss and
+        #   any contact rows): what the free joint can transmit.
+        # The names of the "other" contact pairs go to <file>.other.txt. The simulation is not changed (read-only).
+        if not hasattr(self, '_yawlog'):
+            self._yawlog = None
+            path = os.environ.get('MJ_YAW_FORCE_LOG', '')
+            if not path:
+                return
+            m = self.mj_model._model
+            jz = m.joint('smt/orie/z').id; jh = m.joint('wam/tool/holder_yaw').id
+            dz, dh = int(m.jnt_dofadr[jz]), int(m.jnt_dofadr[jh])
+            bz = int(m.jnt_bodyid[jz]); sub = np.zeros(m.nbody, dtype=bool)
+            for b in range(m.nbody):
+                c = b
+                while c > 0 and c != bz: c = int(m.body_parentid[c])
+                sub[b] = (c == bz)
+            f = open(path, 'w')
+            f.write('t,yaw_rate,act,passive,constraint,bias,inertial,contact_wheels,contact_tool,contact_other,holder_q,holder_qd,holder_passive,holder_constraint\n')
+            self._yawlog = dict(f=f, path=path, jz=jz, dz=dz, dh=dh, qh=int(m.jnt_qposadr[jh]), sub=sub, n=0, other={}, f6=np.zeros(6), mq=np.zeros(m.nv))
+            rospy.loginfo("MuJoCo engine: base yaw force log -> %s" % path)
+        L = self._yawlog
+        if L is None:
+            return
+        L['n'] += 1
+        if L['n'] % 10:
+            return
+        m = self.mj_model._model; d = self.mj_data._data; dz, dh = L['dz'], L['dh']
+        anchor = d.xanchor[L['jz']]; axis = d.xaxis[L['jz']]
+        tw = tt = to = 0.0
+        for i in range(d.ncon):
+            con = d.contact[i]
+            b1, b2 = int(m.geom_bodyid[con.geom1]), int(m.geom_bodyid[con.geom2])
+            s1, s2 = L['sub'][b1], L['sub'][b2]
+            if s1 == s2:
+                continue
+            mujoco.mj_contactForce(m, d, i, L['f6'])
+            Fw = con.frame.reshape(3, 3).T @ L['f6'][0:3]        # force of geom1 on geom2 (world), along the normal geom1 -> geom2
+            F_robot = Fw if s2 else -Fw
+            tz = float(np.dot(np.cross(con.pos-anchor, F_robot), axis))
+            n1, n2 = m.geom(con.geom1).name, m.geom(con.geom2).name
+            if 'whl' in n1 or 'whl' in n2: tw += tz
+            elif n1.startswith('tool/') or n2.startswith('tool/'): tt += tz
+            else:
+                to += tz; key = n1+' | '+n2; L['other'][key] = L['other'].get(key, 0.0)+tz
+        mujoco.mj_mulM(m, d, L['mq'], d.qacc)
+        L['f'].write('%.4f,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.5f,%.5f,%.5f,%.5f\n' % (
+            d.time, d.qvel[dz], d.qfrc_actuator[dz], d.qfrc_passive[dz], d.qfrc_constraint[dz], d.qfrc_bias[dz], L['mq'][dz], tw, tt, to,
+            d.qpos[L['qh']], d.qvel[dh], d.qfrc_passive[dh], d.qfrc_constraint[dh]))
+        if L['n'] % 10000 == 0:
+            L['f'].flush()
+            with open(L['path']+'.other.txt', 'w') as g:
+                for k, v in sorted(L['other'].items(), key=lambda kv: -abs(kv[1])): g.write('%+.3f  %s\n' % (v*0.01, k))
+
     def _hold_callback(self, msg):
         # "/mujoco/hold" (std_msgs/Bool): True = pause the simulation, False = resume
         if msg.data and not self._hold:
@@ -496,9 +556,22 @@ class Mujoco_Engine:
         # Set control commands by simple PID control defined in "control_commands.py"
         # For Summit
         if (self._robot_list[0]):
-            self.summit_control_commands.vel_PID([25.0,25.0,12.0], 
-                                                 [0.3,0.3,0.3], 
-                                                 [1.3,1.3,0.3], 
+            # 2026-11-18 (user: "tune the MB PIDs if you need to"): gains from the rosparam "/mujoco/summit_vel_pid" ([Kp x, y, yaw, Ki x, y, yaw,
+            # Kd x, y, yaw]), read once; missing = the gains below (unchanged). Why: with the yaw Kd 0.3 the yaw loop chatters at the actuator
+            # limit (D = Kd (e - e_last) / dt at 1 kHz, gear 50, yaw inertia ~6 kg m^2: each step the D term answers a rate change with ~2.5
+            # times it in the other direction -> +-500 N m square wave in 91 % of steps, run YL10M); the base then turns on the average of
+            # that wave: gain ~0.75, lagging ("qpd/base_response_fit.py"). Offline ("yawload/pid_tune.py", the playground, the engine's PID on
+            # the model's sensors): yaw Kp 12, Ki 10, Kd 0.05 -> no saturation, gain 0.997, 63 % rise 0.022 s, no overshoot. x / y unchanged
+            # (stable: gain 0.995, rise 0.13 s).
+            if not hasattr(self, '_summit_pid'):
+                g = rospy.get_param('/mujoco/summit_vel_pid', None)
+                self._summit_pid = ([25.0,25.0,12.0], [0.3,0.3,0.3], [1.3,1.3,0.3])
+                if g is not None:
+                    g = [float(v) for v in g]; self._summit_pid = (g[0:3], g[3:6], g[6:9])
+                rospy.loginfo("MuJoCo engine: Summit velocity PID Kp %s Ki %s Kd %s%s" % (self._summit_pid + ('' if g is None else ' (/mujoco/summit_vel_pid)',)))
+            self.summit_control_commands.vel_PID(self._summit_pid[0], 
+                                                 self._summit_pid[1], 
+                                                 self._summit_pid[2], 
                                                  [self.summit_currentx_vel,self.summit_currenty_vel,self.summit_currenttheta_vel],
                                                  self.summit_current_theta-self.summit_initial_theta,
                                                  self.summit_base_name)
@@ -534,6 +607,7 @@ class Mujoco_Engine:
             for i in range(steps):
                 self._apply_caster_scrub()   # 2026-11-15: caster scrub torque (only if the model defines it)
                 mujoco.mj_step(self.mj_model._model, self.mj_data._data)
+                self._log_yaw_forces()   # 2026-11-18: optional base yaw force log (MJ_YAW_FORCE_LOG; off by default)
             
             self.mj_viewer.reset_key_registered_to_step_to_next_safe()
         
