@@ -340,6 +340,17 @@ class Mujoco_Engine:
                 except Exception: pass
             # 2026-11-18 (user: step 12, "make the plant follow the fitted law"): optional "caster_scrub_law" = 1: the cart-rate law of the MPC
             # ("cart_mpc_V30"), one equivalent centred caster on the CART's yaw rate, applied as a yaw torque on "cart/base_link":
+            # Where the caster trail d is used (2026-11-19, user: "the original cart model never cared about trail-length ... add the explanation
+            # on where the trail-length value is being actively used: in deriving the caster's rate of rotation w.r.t the cart's yaw-rate"):
+            # the caster acts on the cart only through the force at its pivot (massless, free swivel: no torque passes the swivel axis), of size
+            # M / d (the scrub torque M at the contact balanced by the side force times the trail). So in the FORCE the trail only appears as the
+            # ratio M0 / d, which a fit or an estimator cannot split: it identifies M0 / d (a force scale, N). The trail is ACTIVELY used in one place
+            # only: the caster's rate of rotation relative to the cart, from the no-lateral-slip kinematics of the pivot A = (L, y_c):
+            #     phi_dot = (w L cos(theta) - (v - w y_c) sin(theta)) / d   (the wheel's world heading rate),   theta_dot = phi_dot - w
+            # (theta = the wheel's rolling direction relative to the cart's x axis). It sets how fast a caster realigns (e.g. after a reversal),
+            # hence the direction of its force (perpendicular to the wheel) and its own swivel rate, which the per-caster scrub law uses.
+            # In this cart-rate law d enters only as L / trail (M0 / trail). In the per-hub law (MuJoCo's swivel joints) the caster's own
+            # swivel rate comes from the simulated caster itself, whose physical trail (the cart model's caster wheel offset) is what d acts through.
             #   M_cart = -M0 (L / trail) w a / sqrt((w a)^2 + v_x^2 + v_y^2 + (L w)^2 + eps^2),  w the cart's yaw rate, (v_x, v_y) its origin's
             #   velocity, L "caster_scrub_swivel_ahead" (m), trail "caster_scrub_trail" (m), M0 for both casters together. The hubs get no torque.
             # Missing or 0: the per-hub law above (the default, unchanged).
