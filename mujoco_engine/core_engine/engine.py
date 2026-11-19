@@ -53,6 +53,13 @@ from scipy.spatial.transform import Rotation as R
 from std_msgs.msg import Float64
 from sensor_msgs.msg import CompressedImage
 
+class _NoViewer:
+    # 2026-11-19 (headless mode, see Mujoco_Engine.__init__ "headless"): stands in for the MuJoCo viewer when no window is opened. Every
+    # viewer call the engine makes (process_safe, update_safe, render_safe, is_key_registered_to_pause_program_safe, ...) is a no-op that
+    # returns False, so the engine never pauses on a key, never renders, and steps the physics exactly as with the viewer.
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: False
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # #        ___           ___         ___          ___           ___           ___       # #
@@ -102,7 +109,8 @@ class Mujoco_Engine:
         robot_list = None,
         if_camera_preview = False,
         if_viewport_preview = True,
-        viewport = None
+        viewport = None,
+        headless = False
     ):
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -135,6 +143,14 @@ class Mujoco_Engine:
         self.if_camera_preview = if_camera_preview
         # Port view
         self.if_viewport_preview = if_viewport_preview
+        # 2026-11-19 (user: run several MuJoCo simulations at once; their rendering through one X display was the bottleneck: one run 0.3x
+        # real time, three at once 0.1x each): headless = no viewer window, no viewport / camera capture, no video files, no image topics.
+        # The physics, the controllers, "/clock" and the hold are unchanged. Off by default (existing launches as before); on with the
+        # argument, or the rosparam "/mujoco/headless", or the environment variable MUJOCO_HEADLESS=1 (read in main.py).
+        self.headless = bool(headless)
+        if self.headless:
+            self.if_viewport_preview = False
+            self.if_camera_preview = False
 
         # Create publishers to publish camera view
         self.pub_rear_cam = rospy.Publisher('/mujoco/camera/compressed',CompressedImage,queue_size=1)
@@ -231,7 +247,11 @@ class Mujoco_Engine:
         self.forklift_current_theta = 0.0
 
         ## MJ Viewer:
-        self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
+        if self.headless:   # 2026-11-19: no window; the stand-in answers every viewer call with a no-op
+            self.mj_viewer = _NoViewer()
+            rospy.loginfo("MuJoCo engine: headless (no viewer, no rendering)")
+        else:
+          self.mj_viewer = mujoco_viewer.MujocoViewer(self.mj_model._model, self.mj_data._data, 
             title="Mujoco-Engine", 
             sensor_config=self._camera_config,
             window_size=(self._viewport["width"], self._viewport["height"]),
@@ -240,8 +260,9 @@ class Mujoco_Engine:
         #     self.mj_viewer_off = mujoco_viewer.MujocoViewer(self.mj_model, self.mj_data, width=800, height=800, title="camera-view")
         # self._t_update = time.time()
         
-        # cv2 window
-        cv2.startWindowThread()
+        # cv2 window (2026-11-19: not in headless mode)
+        if not self.headless:
+            cv2.startWindowThread()
         self.h_min = np.Infinity
         self.width = 0
         for camera, config in self._camera_config.items():
@@ -249,13 +270,18 @@ class Mujoco_Engine:
             # Sum up width
             self.width += config["width"]
         
-        # Start video capture
-        self.camera_video = cv2.VideoWriter(self._write_to+'/camera.avi',  
-                                            cv2.VideoWriter_fourcc(*'MJPG'), 
-                                            self._rate_scene, (self.width,self.h_min))
-        self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
-                                              cv2.VideoWriter_fourcc(*'MJPG'), 
-                                              self._rate_scene, (self._viewport["width"], self._viewport["height"]))
+        # Start video capture (2026-11-19: not in headless mode, where nothing is captured; several engines at once would also all
+        # write the same two files)
+        if self.headless:
+            self.camera_video = None
+            self.viewport_video = None
+        else:
+            self.camera_video = cv2.VideoWriter(self._write_to+'/camera.avi',  
+                                                cv2.VideoWriter_fourcc(*'MJPG'), 
+                                                self._rate_scene, (self.width,self.h_min))
+            self.viewport_video = cv2.VideoWriter(self._write_to+'/viewport.avi',  
+                                                  cv2.VideoWriter_fourcc(*'MJPG'), 
+                                                  self._rate_scene, (self._viewport["width"], self._viewport["height"]))
 
         # # Initialize the queues
         # # Queue of in-coming MuJoCo data
