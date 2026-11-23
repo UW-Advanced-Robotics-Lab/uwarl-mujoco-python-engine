@@ -31,6 +31,8 @@ import rospy
 from rosgraph_msgs.msg import Clock
 # 2026-11-14: simulation hold requested by a controller node ("/mujoco/hold", see "_hold_active")
 from std_msgs.msg import Bool
+from std_msgs.msg import Float64MultiArray   # 2026-11-23: the hold acknowledgement (/mujoco/hold_ack)
+import os as _os
 import time as _wall_time
 
 # custom libraries:
@@ -126,6 +128,24 @@ class Mujoco_Engine:
         self._hold_timed_out = False
         self._max_hold_wall_time = float(rospy.get_param('/mujoco/max_hold_wall_time', 30.0))
         self._hold_sub = rospy.Subscriber('/mujoco/hold', Bool, self._hold_callback, queue_size=10)
+        # 2026-11-23 (user: "Then we need a handshake. When a pause command is sent, a reply should be sent back saying that the pause
+        # is in effect. For unpausing, a handshake may not be necessary." - step 1, measure only): when a hold request (True) arrives,
+        # the simulated time of its arrival is noted; when the hold first takes effect in _update (the physics stops stepping), the
+        # engine publishes "/mujoco/hold_ack" (std_msgs/Float64MultiArray) [n, t_request_arrived, t_hold_in_effect] (n = the hold's
+        # number, 1, 2, ..; times = simulated seconds, mj_data.time) and appends the same row to "<ROS_LOG_DIR>/hold_ack.csv"
+        # (/mujoco/hold_ack_log overrides the path; empty = no file). t_hold_in_effect - t_request_arrived = the simulated time that passed
+        # between the request reaching the engine and the pause. NOTHING ELSE CHANGES: the physics, the hold itself and its release are
+        # as before (no node waits for the acknowledgement yet). Example row: 17, 1.712, 1.713 (one 1 ms step stepped after the request).
+        self._hold_n = 0
+        self._hold_req_sim = None
+        self._hold_ack_pub = rospy.Publisher('/mujoco/hold_ack', Float64MultiArray, queue_size=10)
+        _ld = _os.environ.get('ROS_LOG_DIR', '')
+        self._hold_ack_log = rospy.get_param('/mujoco/hold_ack_log', (_ld + '/hold_ack.csv') if _ld else '')
+        if self._hold_ack_log:
+            try:
+                with open(self._hold_ack_log, 'w') as _f: _f.write('n,t_request_arrived,t_hold_in_effect\n')
+            except Exception:
+                self._hold_ack_log = ''
         ## Init Configs:
         if camera_config:
             self._camera_config = (camera_config) # override if given
@@ -174,6 +194,21 @@ class Mujoco_Engine:
         ## Initiate MJ
         self.mj_model = MjModel.from_xml_path(xml_path=self.xml_path)
         self.mj_data = MjData(self.mj_model)
+        # 2026-11-23 (step 14; user: caster start angles "60 and 120 deg sound reasonable" + "You also wanted 90 and 180 degs, right?"): the cart's
+        # front casters can START swivelled. rosparam "/mujoco/caster_start_angle_deg" (degrees; unset or 0 = as before, both casters
+        # trailing straight) sets the angle of both swivel joints "cart/C_swivel_hub" and "cart/C2_swivel_hub" (the jointpos sensors
+        # "joint_pos_cart_swivel_C/C2"; theta relative to the cart, 0 = the wheel trailing behind its swivel axis, 180 = the wheel leading)
+        # once, here, before the first physics step; mj_forward then makes positions, sensors and contacts consistent. E.g. 90: both wheels
+        # sideways (+90 deg about the swivel axis, z up). Nothing else changes; the casters swivel freely from there.
+        _ca = float(rospy.get_param('/mujoco/caster_start_angle_deg', 0.0) or 0.0)
+        if _ca != 0.0:
+            _m = self.mj_model._model; _d = self.mj_data._data
+            for _jn in ('cart/C_swivel_hub', 'cart/C2_swivel_hub'):
+                _j = mujoco.mj_name2id(_m, mujoco.mjtObj.mjOBJ_JOINT, _jn)
+                if _j < 0: raise RuntimeError('MuJoCo engine: /mujoco/caster_start_angle_deg set but the model has no joint %s' % _jn)
+                _d.qpos[_m.jnt_qposadr[_j]] = np.radians(_ca)
+            mujoco.mj_forward(_m, _d)
+            rospy.loginfo('MuJoCo engine: both front casters start at %.1f deg (swivel angle, 0 = trailing straight)' % _ca)
         self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model, self._robot_list)
         self.pub_time = rospy.Publisher('/simtime',Float64,queue_size=1)
         self.simtime = Float64()
@@ -441,6 +476,7 @@ class Mujoco_Engine:
         if msg.data and not self._hold:
             self._hold_since_wall = _wall_time.time()
             self._hold_timed_out = False
+            self._hold_req_sim = float(self.mj_data.time)   # 2026-11-23: the acknowledgement's request time (simulated)
         self._hold = bool(msg.data)
 
     def _hold_active(self):
@@ -459,6 +495,16 @@ class Mujoco_Engine:
         # 2026-11-14: while a hold is active, neither step the physics nor run the controllers that integrate over time (base
         # velocity PID: its time-step would be ~0 with the clock paused); keep the GUI responsive and keep publishing "/clock".
         if self._hold_active():
+            if self._hold_req_sim is not None:   # 2026-11-23: the first update with the hold in effect -> acknowledge it once
+                self._hold_n += 1
+                _row = [float(self._hold_n), self._hold_req_sim, float(self.mj_data.time)]
+                self._hold_req_sim = None
+                self._hold_ack_pub.publish(Float64MultiArray(data=_row))
+                if self._hold_ack_log:
+                    try:
+                        with open(self._hold_ack_log, 'a') as _f: _f.write('%d,%.4f,%.4f\n' % tuple(_row))
+                    except Exception:
+                        pass
             self.mj_viewer.process_safe()
             sim_time_msg = Clock()
             sim_time_msg.clock = rospy.Time.from_sec(self.mj_data.time)
