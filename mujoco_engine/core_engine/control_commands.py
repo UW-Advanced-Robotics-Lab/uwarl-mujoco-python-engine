@@ -75,10 +75,44 @@ class ControlCommand(object):
         # So, if the MB was initially tilted, then the actuators, which are fixed to the ground, are also tilted.
         # This initial-angle is subtracted from the current yaw-angle to get the above provided yaw-angle.
 
+        # 2026-11-20 (user: "Yesterday, you had tuned the MB yaw-rate PIDs to match the hardware. Can you do the same for the MB lateral and
+        # longitudinal velocities as well?" and "That should constrain what the MB can exert, and not just come from the OCPs limits."): two
+        # optional features, read once from rosparams; both OFF when the parameters are missing (the behaviour before, unchanged):
+        #   /mujoco/summit_accel_limit [a_x, a_y, a_yaw] (m/s^2, m/s^2, rad/s^2): the commanded base velocity (self.vel_base, base frame, from
+        #       cmd_vel) is passed through a rate limiter per base axis before the PID, as the robot's base controller does (the real
+        #       Summit speeds up at no more than ~0.6 m/s^2 in x and y: Vicon, runs 2026-11-02 .. 11-05). Each call the limited set-point
+        #       moves towards the command by at most a * dt (dt: the time since the last call). E.g. a step 0 -> 0.3 m/s with 0.6 m/s^2
+        #       becomes a 0.5 s ramp.
+        #   /mujoco/summit_pid_base_frame (bool): the x / y PID acts in the BASE frame (errors rotated into the base frame, P / I / D per base
+        #       axis, the two forces rotated back to the world-fixed actuators). Needed when x and y have different gains (Kp_y != Kp_x):
+        #       in the world-aligned frame (the default) the gain would follow the world axes, so a base turned by 90 deg would get Kp_x on
+        #       its lateral motion. With equal gains both frames give the same forces (P and D exactly; I up to its rotation history).
+        if not hasattr(self, '_acc_lim'):
+            try:
+                a = rospy.get_param('/mujoco/summit_accel_limit', None); self._acc_lim = None if a is None else [float(v) for v in a]
+            except Exception:
+                self._acc_lim = None
+            try: self._pid_base_frame = bool(rospy.get_param('/mujoco/summit_pid_base_frame', False))
+            except Exception: self._pid_base_frame = False
+            self._sp_lim = [0.0, 0.0, 0.0]; self._sp_t_last = None
+            rospy.loginfo("MuJoCo engine: base set-point acceleration limit %s, PID in the %s frame" % (self._acc_lim, 'base' if self._pid_base_frame else 'world-aligned'))
+        vel_cmd = list(self.vel_base)
+        if self._acc_lim is not None:
+            t_now = rospy.Time().now().to_time()
+            dt_sp = 0.0 if self._sp_t_last is None else max(t_now - self._sp_t_last, 0.0); self._sp_t_last = t_now
+            for k in range(3):
+                # 2026-11-21 (step 13, user: "divide step 13 into that many parts ... add a switch"): an axis whose limit is <= 0 is NOT limited
+                # (its set-point follows the command exactly), so each axis can be switched on alone, e.g. [0, 0, 1.5] = only the yaw ceiling.
+                if self._acc_lim[k] <= 0.0:
+                    self._sp_lim[k] = vel_cmd[k]
+                    continue
+                step = self._acc_lim[k]*dt_sp
+                self._sp_lim[k] += min(max(vel_cmd[k] - self._sp_lim[k], -step), step)
+            vel_cmd = list(self._sp_lim)
         # Convert the local velocities into the stationary initial base-frame.
-        SP_x = self.vel_base[0]*cos(yaw_angle)-self.vel_base[1]*sin(yaw_angle)
-        SP_y = self.vel_base[0]*sin(yaw_angle)+self.vel_base[1]*cos(yaw_angle)
-        SP_theta = self.vel_base[2]
+        SP_x = vel_cmd[0]*cos(yaw_angle)-vel_cmd[1]*sin(yaw_angle)
+        SP_y = vel_cmd[0]*sin(yaw_angle)+vel_cmd[1]*cos(yaw_angle)
+        SP_theta = vel_cmd[2]
 
         # Current base velocity in initial base-frame.
         CP_x = CP[0]*cos(yaw_angle)-CP[1]*sin(yaw_angle)
@@ -88,6 +122,9 @@ class ControlCommand(object):
         t = rospy.Time().now().to_time()
         e_x = float(SP_x - CP_x)
         e_y = float(SP_y - CP_y)
+        if self._pid_base_frame:
+            # errors in the base frame (x forward, y left): the gains below act per base axis
+            e_x, e_y = e_x*cos(yaw_angle)+e_y*sin(yaw_angle), -e_x*sin(yaw_angle)+e_y*cos(yaw_angle)
         e_theta = float(SP_theta - CP_theta)
         # if(base_name is "fetch"):
         #     print("SP theta vel: "+str(SP_theta))
@@ -117,6 +154,9 @@ class ControlCommand(object):
 
         control_x = P_x+self.I_x+D_x
         control_y = P_y+self.I_y+D_y
+        if self._pid_base_frame:
+            # the base-frame forces back to the world-fixed actuators
+            control_x, control_y = control_x*cos(yaw_angle)-control_y*sin(yaw_angle), control_x*sin(yaw_angle)+control_y*cos(yaw_angle)
         control_theta = P_theta+self.I_theta+D_theta
 
         # Set control commands in mj_data
