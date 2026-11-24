@@ -477,6 +477,11 @@ class Mujoco_Engine:
             self._hold_since_wall = _wall_time.time()
             self._hold_timed_out = False
             self._hold_req_sim = float(self.mj_data.time)   # 2026-11-23: the acknowledgement's request time (simulated)
+            # 2026-11-24: the first hold request (= the controller's first MPC call) is t = 0 of the simulated base stalls
+            # (/mujoco/base_stall_intervals, control_commands.vel_PID)
+            _cc = getattr(self, 'summit_control_commands', None)
+            if _cc is not None and getattr(_cc, 'stall_t0', None) is None:
+                _cc.stall_t0 = rospy.Time().now().to_time()
         self._hold = bool(msg.data)
 
     def _hold_active(self):

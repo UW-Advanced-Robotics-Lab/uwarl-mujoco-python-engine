@@ -97,6 +97,30 @@ class ControlCommand(object):
             self._sp_lim = [0.0, 0.0, 0.0]; self._sp_t_last = None
             rospy.loginfo("MuJoCo engine: base set-point acceleration limit %s, PID in the %s frame" % (self._acc_lim, 'base' if self._pid_base_frame else 'world-aligned'))
         vel_cmd = list(self.vel_base)
+        # 2026-11-24 (step 14, the waiting reference; user: "replace step 14's sensitivity analysis with adding yesterday's reference holder and
+        # testing that out"): SIMULATED BASE STALLS, as the robot's emergency stop in trial 2026_11_23_2 (vibration over a 1 mm floor ridge
+        # tripped it three times: 12.0-14.3, 15.8-17.3 and 18.3-20.3 s). rosparam /mujoco/base_stall_intervals [t0, t1, t0, t1, ...] (s): during
+        # each [t0, t1) the base's set-point is ZERO whatever the command (the PID brakes the base to rest), and the acceleration-limited
+        # set-point restarts from zero afterwards (the base speeds up again within its ceilings, as the robot after a reset). The times
+        # count from the controller's FIRST simulation hold request (= its first MPC call; the engine sets "stall_t0", see engine.py
+        # _hold_callback), the time base of the robot runs' tracking pages. Missing / empty = no stalls (the behaviour before, unchanged).
+        if not hasattr(self, '_stalls'):
+            try:
+                st = [float(v) for v in (rospy.get_param('/mujoco/base_stall_intervals', []) or [])]
+            except Exception:
+                st = []
+            self._stalls = [(st[i], st[i+1]) for i in range(0, len(st) - 1, 2)]; self._stall_in = False
+            if not hasattr(self, 'stall_t0'): self.stall_t0 = None
+            if self._stalls: rospy.loginfo("MuJoCo engine: simulated base stalls %s (s after the first hold request)" % (self._stalls,))
+        if self._stalls and self.stall_t0 is not None:
+            t_rel = rospy.Time().now().to_time() - self.stall_t0
+            stalled = any(a <= t_rel < b for a, b in self._stalls)
+            if stalled != self._stall_in:
+                self._stall_in = stalled
+                rospy.logwarn("MuJoCo engine: simulated base stall %s at %.2f s" % ('START' if stalled else 'END', t_rel))
+            if stalled:
+                vel_cmd = [0.0, 0.0, 0.0]
+                if hasattr(self, '_sp_lim'): self._sp_lim = [0.0, 0.0, 0.0]   # the limited set-point restarts from rest
         if self._acc_lim is not None:
             t_now = rospy.Time().now().to_time()
             dt_sp = 0.0 if self._sp_t_last is None else max(t_now - self._sp_t_last, 0.0); self._sp_t_last = t_now
