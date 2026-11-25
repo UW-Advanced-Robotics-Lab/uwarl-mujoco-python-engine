@@ -209,6 +209,23 @@ class Mujoco_Engine:
                 _d.qpos[_m.jnt_qposadr[_j]] = np.radians(_ca)
             mujoco.mj_forward(_m, _d)
             rospy.loginfo('MuJoCo engine: both front casters start at %.1f deg (swivel angle, 0 = trailing straight)' % _ca)
+        # 2026-11-25 (user: "Go ahead." on putting the grip torque fitted on the robot into MuJoCo's cart): the tool holder's vertical swivel
+        # "wam/tool/holder_yaw" (the two prongs cradling the handle turn freely about it; model: stiffness 0.5 N m/rad, damping 0.001) gets the
+        # torsional stiffness and damping fitted on five robot turn-2 runs (cart_mpc step_tools/cart_yaw_replay_V3.py: the MPC's cart model
+        # with the measured hand motion over-predicted the cart's rotation 1.3-1.5x; a torque -k (handle yaw - hand yaw) - c (rate difference)
+        # brought it to 0.96-1.02 with k 40 N m/rad, c 5 N m s/rad). On the robot that spring is mostly the handle's flex (the handle end
+        # bends back 2-3 cm in hard turns = 4-6 deg) plus the swivel's own stiffness; MuJoCo's handle is rigid, so all of it goes on the
+        # swivel (springs in series with almost no mass between them). rosparam "/mujoco/grip_swivel" = [k (N m/rad), c (N m s/rad)]; unset =
+        # the model's values, unchanged. The spring's rest angle stays the model's springref (0: prongs square to the wrist, as at the grasp).
+        _gs = rospy.get_param('/mujoco/grip_swivel', None)
+        if _gs:
+            _m = self.mj_model._model
+            _j = mujoco.mj_name2id(_m, mujoco.mjtObj.mjOBJ_JOINT, 'wam/tool/holder_yaw')
+            if _j < 0: raise RuntimeError('MuJoCo engine: /mujoco/grip_swivel set but the model has no joint wam/tool/holder_yaw')
+            _k, _c = float(_gs[0]), float(_gs[1])
+            _old = (float(_m.jnt_stiffness[_j]), float(_m.dof_damping[_m.jnt_dofadr[_j]]))
+            _m.jnt_stiffness[_j] = _k; _m.dof_damping[_m.jnt_dofadr[_j]] = _c
+            rospy.loginfo('MuJoCo engine: grip swivel wam/tool/holder_yaw stiffness %.3f -> %.3f N m/rad, damping %.4f -> %.4f N m s/rad' % (_old[0], _k, _old[1], _c))
         self.state_pub = StatePublisherMujoco(self.mj_data, self.mj_model, self._robot_list)
         self.pub_time = rospy.Publisher('/simtime',Float64,queue_size=1)
         self.simtime = Float64()
