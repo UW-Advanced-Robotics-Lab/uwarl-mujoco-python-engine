@@ -406,10 +406,37 @@ class Mujoco_Engine:
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, base, v6, 0); w = v6[2]; vx, vy = v6[3], v6[4]
             d.xfrc_applied[base, 3:6] = [0.0, 0.0, -M0*(L/trail)*w*a/np.sqrt((w*a)**2 + vx**2 + vy**2 + (L*w)**2 + eps**2)]
             return
-        for hb, wb in pairs:
+        fac = self._scrub_noise_factors(float(d.time), len(pairs))   # 2026-11-24: 1 for every caster unless /mujoco/caster_scrub_noise is set
+        for i_c, (hb, wb) in enumerate(pairs):
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, hb, v6, 0); w = v6[2]
             mujoco.mj_objectVelocity(m, d, mujoco.mjtObj.mjOBJ_BODY, wb, v6, 0); v = np.hypot(v6[3], v6[4])
-            d.xfrc_applied[hb, 3:6] = [0.0, 0.0, -M0*w*a/np.sqrt((w*a)**2 + v**2 + eps**2)]
+            d.xfrc_applied[hb, 3:6] = [0.0, 0.0, -M0*fac[i_c]*w*a/np.sqrt((w*a)**2 + v**2 + eps**2)]
+
+    def _scrub_noise_factors(self, t, n):
+        # 2026-11-24 (user: "Can we vary the sliding coefficient to encourage flipping the casters noisily? That might show which
+        # stretch-strategy is robust." -> "Prioritize these trials"): optional NOISY CASTER SCRUB, in the plant only (the MPC's model keeps the
+        # constant M0). rosparam "/mujoco/caster_scrub_noise" = [sigma, tau_s, seed]: each caster's scrub M0 is multiplied by
+        # f_i(t) = max(0, 1 + n_i(t)), n_i an Ornstein-Uhlenbeck process (mean 0, standard deviation sigma, correlation time tau_s), independent
+        # per caster, sampled on a 10 ms grid of simulated time from the controller's first hold request (= its first MPC call, as the base
+        # stalls), drawn from numpy's default_rng(seed): the SAME seed gives the SAME disturbance in every run, whatever the controller does.
+        # E.g. [0.5, 0.3, 1]: M0 varies by about +-50 % (clipped at 0), changing over about 0.3 s; a caster with f near 0 swivels freely, one
+        # with f near 2 sticks, so the casters stick and flip unevenly. Unset (default) or before the first hold request: f = 1 (as before).
+        if not hasattr(self, '_snoise'):
+            self._snoise = None
+            p_ = rospy.get_param('/mujoco/caster_scrub_noise', None)
+            if p_:
+                sig, tau, seed = float(p_[0]), float(p_[1]), int(p_[2]); dt = 0.01; a_ = float(np.exp(-dt / tau))
+                self._snoise = dict(sig=sig, a=a_, b=sig*float(np.sqrt(1.0 - a_*a_)), dt=dt, rng=np.random.default_rng(seed),
+                                    seq=[sig*np.random.default_rng(seed + 1000003).standard_normal(n)])   # n(0) from the stationary law
+                rospy.loginfo("MuJoCo engine: noisy caster scrub: M0 x max(0, 1 + n(t)), sigma %.2f, correlation %.2f s, seed %d, %d casters, from the first hold request"
+                              % (sig, tau, seed, n))
+        S_ = self._snoise; t0 = getattr(self, '_noise_t0_sim', None)
+        if S_ is None or t0 is None or t < t0:
+            return np.ones(n)
+        k = int((t - t0) / S_['dt'])
+        while len(S_['seq']) <= k:
+            S_['seq'].append(S_['a']*S_['seq'][-1] + S_['b']*S_['rng'].standard_normal(n))
+        return np.maximum(0.0, 1.0 + S_['seq'][k])
 
     def _log_yaw_forces(self):
         # 2026-11-18 (user: "do it" = find what loads the base's yaw; "confirm that the prongs are free to rotate about its yaw-axis"): optional
@@ -482,6 +509,8 @@ class Mujoco_Engine:
             _cc = getattr(self, 'summit_control_commands', None)
             if _cc is not None and getattr(_cc, 'stall_t0', None) is None:
                 _cc.stall_t0 = rospy.Time().now().to_time()
+            if getattr(self, '_noise_t0_sim', None) is None:   # 2026-11-24: t = 0 of the noisy caster scrub (/mujoco/caster_scrub_noise)
+                self._noise_t0_sim = float(self.mj_data.time)
         self._hold = bool(msg.data)
 
     def _hold_active(self):
